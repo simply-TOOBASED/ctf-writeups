@@ -32,15 +32,60 @@ Next step is to try and guess what kind of web server or framework the website i
 
 ![Imgur](http://i.imgur.com/Vof1bja.png)
 
-Flask runs off of an app.py or a main.py, normally, so we try both of those filenames, and we find https://mindreader.web.ctfcompetition.com/?f=main.py! The reason the code isn't formatted is because it's just printing the code as plaintext, for that reason I re-formatted the code and put in the `main.py` in this directory.
+Flask runs off of an app.py or a main.py, normally, so we try both of those filenames, and we find https://mindreader.web.ctfcompetition.com/?f=main.py! The reason the code isn't formatted is because it's just printing the code as plaintext, so I re-formatted the code and put in [main.py](main.py).
 
-As we can see, the flag is stored in an environment variable, after some googling we see that we have to access `/proc/self/environ`. However, line 29 in our [main.py] seems to be protecting against this:
+```python
+from flask import Flask, request, abort
+import re
+import os
+import logging
 
-```if re.search(r'proc|random|zero|stdout|stderr', f):```
+assert os.environ['FLAG']
+
+app = Flask(__name__)
+
+INDEX = open('index.html').read()
+
+HALL_OF_SHAME = [
+    '173.171.203.59',
+    '2a02:6b8:b010:6026:84:201:185:197',
+    '35.185.158.159',
+    '81.17.25.8'
+]
+
+@app.route('/')
+def index():
+    for ip in request.headers.get('X-Forwarded-For', '').split(','):
+        ip = ip.strip().lower()
+        if ip in HALL_OF_SHAME:
+            abort(403)
+
+    if 'f' in request.args:
+        try:
+            f = request.args['f']
+            if re.search(r'proc|random|zero|stdout|stderr', f):
+                abort(403)
+            elif '\x00' in f:
+                abort(404)
+            return open(f).read(4096)
+        except IOError:
+            abort(404)
+    else:
+        return INDEX
+```
+
+`assert os.environ['FLAG']` tells us that the flag we seek is stored in an environment variable. After some googling we see that we have to access `/proc/self/environ` in order to view any environment variables. However, lines 29 & 30 in our [main.py](main.py) seems to be protecting against this:
+
+```python
+if re.search(r'proc|random|zero|stdout|stderr', f):
+    abort(403)
+```
 
 After being stuck for a couple of hours, my teammate gave me some useful information: `/dev/fd` is a symlink to `/proc/self/fd`. Therefore we can just make our filename `/dev/fd/../environ`, which is equivalent to `/proc/self/environ` and get the flag!
 
 As predicted, accessing https://mindreader.web.ctfcompetition.com/?f=/dev/fd/../environ gets us our flag:
+
+![Imgur](http://i.imgur.com/533UYyz.png)
 
 `CTF{ee02d9243ed6dfcf83b8d520af8502e1}`
 
