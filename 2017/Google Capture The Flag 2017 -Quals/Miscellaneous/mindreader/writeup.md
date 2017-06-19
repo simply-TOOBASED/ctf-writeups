@@ -2,7 +2,7 @@
 
 At first look at https://mindreader.web.ctfcompetition.com/, there's nothing really there, just one input and a question asking us what we want to read.
 
-![Imgur](http://i.imgur.com/Y8272nY.png)
+![Imgur](http://i.imgur.com/ftlJy65.png)
 
 This is the source code for the website:
 ```html
