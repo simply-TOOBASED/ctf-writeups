@@ -34,7 +34,9 @@ Next step is to try and guess what kind of web server or framework the website i
 
 Flask runs off of an app.py or a main.py, normally, so we try both of those filenames, and we find https://mindreader.web.ctfcompetition.com/?f=main.py! The reason the code isn't formatted is because it's just printing the code as plaintext, for that reason I re-formatted the code and put in the `main.py` in this directory.
 
-As we can see, the flag is stored in an environment variable, after some googling we see that we have to access `/proc/self/environ`. However, because of the re.search, we can't have "proc" in our string at all.
+As we can see, the flag is stored in an environment variable, after some googling we see that we have to access `/proc/self/environ`. However, line 29 in our [main.py] seems to be protecting against this:
+
+```if re.search(r'proc|random|zero|stdout|stderr', f):```
 
 After being stuck for a couple of hours, my teammate gave me some useful information: `/dev/fd` is a symlink to `/proc/self/fd`. Therefore we can just make our filename `/dev/fd/../environ`, which is equivalent to `/proc/self/environ` and get the flag!
 
