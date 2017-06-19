@@ -1,6 +1,22 @@
-Writeup for mindreader
+>Can you read my mind?<br><br>Challenge running at https://mindreader.web.ctfcompetition.com/
 
-At first look at mindreader, just putting in random strings seems to be returning a 404 saying "URL not found". 
+At first look at https://mindreader.web.ctfcompetition.com/, there's nothing really there, just one input and a question asking us what we want to read.
+
+This is the source code for the website:
+```html
+<html>
+<head>
+</head>
+<body>
+    <p>Hello, what do you want to read?</p>
+    <form method="GET">
+        <input type="text" name="f">
+        <input type="submit" value="Read">
+    </form>
+</body>
+</html>
+```
+just putting in random strings seems to be returning a 404 saying "URL not found". 
 
 So what happens if we an actual URL? Trying http://www.google.com just returns the same 404. However, what happens if we try a file on the website? (hence the "what do you want to read?" part - it's asking what file we want to read) Trying obvious file names (index.php, index.html, etc.), and we see that "index.html" as an input string seems to work, so that confirms that the website is a file reader.
 
