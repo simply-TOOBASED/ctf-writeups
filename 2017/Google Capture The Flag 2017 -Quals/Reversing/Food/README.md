@@ -6,4 +6,7 @@ If the link above doesn't work to download the apk, I uploaded the apk to this f
 
 The first step with our apk is to decompile it. I normally use this site: http://www.javadecompilers.com/apk. You can view the files from the decompiled apk in the [food_source_from_JADX](food_source_from_JADX) folder.
 
+Let's take a look at the [FoodActivity.java](/food_source_from_JADX/com/google/ctf/food/FoodActivity.java) file
+
+
 Our flag is `CTF{bacon_lettuce_tomato_lobster_soul}`
