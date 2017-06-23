@@ -40,6 +40,13 @@ public class FoodActivity extends AppCompatActivity {
 ```
 So for this activity, `C0174R.layout.activity_food` is the layout that's used, let's look at the layout resource file and see if there's anything interesting in it. It will probably be located in [/res/layout/activity_food.xml](./food_source_from_JADX/res/layout/activity_food.xml). There's only a Relative Layout and nothing else interesting, so let's take a look at this line: `System.loadLibrary("cook");`.
 
-According to the Android docs:
+According to the [Android Docs](https://developer.android.com/reference/java/lang/System.html#loadLibrary(java.lang.String)):
+
+>Loads the native library specified by the libname argument. The libname argument must not contain any platform specific prefix, file extension or path. If a native library called libname is statically linked with the VM, then the JNI_OnLoad_libname function exported by the library is invoked. See the JNI Specification for more details. Otherwise, the libname argument is loaded from a system library location and mapped to a native library image in an implementation- dependent manner.<br><br>The call `System.loadLibrary(name)` is effectively equivalent to the call<br><br>`Runtime.getRuntime().loadLibrary(name)`
+
+So essentially what the method is doing is loading a native library, and looking at this StackOverflow question: https://stackoverflow.com/questions/27421134/system-loadlibrary-couldnt-find-native-library-in-my-case, we see that if our argument is `"cook"`, then there's probably a `libcook.so` in the `/lib/` folder, which [there is!](./food_source_from_JADX/lib/x86/libcook.so)
+
+**Note**: There's a `x86` and `armeabi` folder, I use the `libcook.so` in the `x86` folder, because when I decompile the file using IDA Pro, it's easier to view the pseudocode and assembly code.
+
 
 Our flag is `CTF{bacon_lettuce_tomato_lobster_soul}`
