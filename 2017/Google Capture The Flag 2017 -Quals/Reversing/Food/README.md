@@ -48,5 +48,7 @@ So essentially what the method is doing is loading a native library, and looking
 
 **Note**: There's a `x86` and `armeabi` folder, I use the `libcook.so` in the `x86` folder, because when I decompile the file using IDA Pro, it's easier to view the pseudocode and assembly code.
 
+So the `.so` tells us that it's a shared library file, and according to what the Android Docs said above, we're looking for a JNI_OnLoad_libname function cause that is what invoked, so the flag will probably be somewhere in that function.
+
 
 Our flag is `CTF{bacon_lettuce_tomato_lobster_soul}`
