@@ -20,5 +20,26 @@ Pay close attention to this:
 The `android.intent.action.MAIN` and `android.intent.category.LAUNCHER` tell us that `com.google.ctf.food.FoodActivity` is the main activity of the application and the one that's launched first when you first open the app.
 
 So now let's take a look at the [com.google.ctf.food.FoodActivity.java](./food_source_from_JADX/com/google/ctf/food/FoodActivity.java) file
+```
+package com.google.ctf.food;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+
+public class FoodActivity extends AppCompatActivity {
+    public static Activity activity;
+
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView((int) C0174R.layout.activity_food);
+        activity = this;
+        System.loadLibrary("cook");
+    }
+}
+```
+So for this activity, `C0174R.layout.activity_food` is the layout that's used, let's look at the layout resource file and see if there's anything interesting in it. It will probably be located in [/res/layout/activity_food.xml](./food_source_from_JADX/res/layout/activity_food.xml). There's only a Relative Layout and nothing else interesting, so let's take a look at this line: `System.loadLibrary("cook");`.
+
+According to the Android docs:
 
 Our flag is `CTF{bacon_lettuce_tomato_lobster_soul}`
