@@ -86,6 +86,36 @@ So analyzing the function we see a couple of things, first it frees up memory us
 
 With the line `filename = (char *)sub_680(21, 32);`, `32` is what's passed to `a2`, so if we look at the stack and the assembly code, that's the `mov     [esp+0ECh+mode], 25410F20h` line (32 in hex is 0x20). Because the `char` type in c is only 1 byte, we can only pass one byte as the value of `a2`, that's the reason why 32 is used as opposed to 0x25410F20, so the last byte (0x20) is being passed as the parameter. But, as we see in the psuedocode, it casts the addess as a `_DWORD` pointer, so when we derefence it, `v4` will have the value of 0x25410F20, because that value can be stored in a `_DWORD`.
 
-So `v4` is looping through the values we added to the stack, and then it's doing some computations and storing them where we freed memory using `malloc`. Then it returns v2, so it's returning 
+So `v4` is looping through the values we added to the stack, and then it's doing some computations and storing them where we freed memory using `malloc` and then the function returns `v2`. Let's try and rewrite the computations the function is doing in python along with those values we added to the stack just to see what numbers we get and attempt to convert those numbers to printable ASCII chars.
 
+```
+def byte3(val):
+    return (val >> 24) & 0xff
+
+def byte2(val):
+    return (val >> 16) & 0xff
+
+def byte1(val):
+    return (val >> 8) & 0xff
+
+def byte0(val):
+    return val & 0xff
+
+def dec(vals):
+    string = '';
+    for s in vals:
+        news = '';
+        news += chr(~((byte1(s) | ~byte0(s)) & (s | ~byte1(s))));
+        news += chr(byte2(s) ^ byte3(s));
+        string += news;
+    return string;
+
+vals = [0x25410F20, 0x10640564, 0x5B744120, 0x4650C68, 0x6675420, 0x0C6F5D72, 0x36E1A75, 0x47204A64, 0x0A650D62, 0x0A660265, 0x4F614520, 0x10640D6E, 0x4D634620, 0x6F096F, 0x4420046B, 0x86E5A75, 0x5691D74, 0x5320096C, 0x16724D62, 0x1377416F, 0x1D650B6E]
+filename = dec(vals);
+print filename
+```
+
+So to explain the code, the reason why `*(&a2 + 4 * v3))` turned into `byte0(s)` is because `a2` is a char, so it's only 1 byte, and when you add `4*v3`, which will take values of `0,4,8,..`, you're basically going up the stack 0 bytes, 4 bytes, 8 bytes, etc, which corresponds to the lowest byte of each value we added on the stack. Also this expression: `(v4 >> 16)` was changed to just `byte2(s)` because `v2` in the pseudocode is of type `_BYTE`, so that means all of the computations will only get an answer that's a byte, which will probably be the lower byte of the result. When we run the python script we get the following: `/data/data/com.google.ctf.food/files/d.dex`. So this look like a file that might be hidden somewhere in this apk.
+
+We look further in the pseudocode and see this line: `fwrite("dex\n035", 0x15A8u, 1u, v5)`, and `v5 = fopen(filename, v4)`, so we open the file `/data/data/com.google.ctf.food/files/d.dex` and we're writing data to it. We can double click on the `"dex\n035"` in IDA and see that it's at address `0x00001640`, so we copy the data from `0x00001640` to `0x00001640 + 0x15A8` and save that file as [d.dex](d.dex).
 Our flag is `CTF{bacon_lettuce_tomato_lobster_soul}`
