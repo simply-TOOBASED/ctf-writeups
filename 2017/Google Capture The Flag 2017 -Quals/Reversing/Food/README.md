@@ -118,4 +118,145 @@ print filename
 So to explain the code, the reason why `*(&a2 + 4 * v3))` turned into `byte0(s)` is because `a2` is a char, so it's only 1 byte, and when you add `4*v3`, which will take values of `0,4,8,..`, you're basically going up the stack 0 bytes, 4 bytes, 8 bytes, etc, which corresponds to the lowest byte of each value we added on the stack. Also this expression: `(v4 >> 16)` was changed to just `byte2(s)` because `v2` in the pseudocode is of type `_BYTE`, so that means all of the computations will only get an answer that's a byte, which will probably be the lower byte of the result. When we run the python script we get the following: `/data/data/com.google.ctf.food/files/d.dex`. So this look like a file that might be hidden somewhere in this apk.
 
 We look further in the pseudocode and see this line: `fwrite("dex\n035", 0x15A8u, 1u, v5)`, and `v5 = fopen(filename, v4)`, so we open the file `/data/data/com.google.ctf.food/files/d.dex` and we're writing data to it. We can double click on the `"dex\n035"` in IDA and see that it's at address `0x00001640`, so we copy the data from `0x00001640` to `0x00001640 + 0x15A8` and save that file as [d.dex](d.dex).
+
+Searching online, a `.dex` file is nothing but a compiled Android program. All dex files are then zipped into one apk, and that's how an Android app is made. So we can decompile the `d.dex` file we have using an online tool again. This site: http://www.javadecompilers.com/apk works pretty well, and you can view the files from the decompiled d.dex file in the [d.dex_source_from_JADX](d.dex_source_from_JADX) folder.
+
+We have 4 java files with weird names, but the [C0000F.java](./d.dex_source_from_JADX/com/google/ctf/food/C0000F.java) is interesting.
+
+```
+public class C0000F extends BroadcastReceiver {
+    private static byte[] flag = new byte[]{(byte) -19, (byte) 116, (byte) 58, (byte) 108, (byte) -1, (byte) 33, (byte) 9, (byte) 61, (byte) -61, (byte) -37, (byte) 108, (byte) -123, (byte) 3, (byte) 35, (byte) 97, (byte) -10, (byte) -15, (byte) 15, (byte) -85, (byte) -66, (byte) -31, (byte) -65, (byte) 17, (byte) 79, (byte) 31, (byte) 25, (byte) -39, (byte) 95, (byte) 93, (byte) 1, (byte) -110, (byte) -103, (byte) -118, (byte) -38, (byte) -57, (byte) -58, (byte) -51, (byte) -79};
+    private Activity f0a;
+    private int f1c;
+    private byte[] f2k = new byte[8];
+
+    public void cc() {
+        /* JADX: method processing error */
+        throw new UnsupportedOperationException("Method not decompiled: com.google.ctf.food.F.cc():void");
+    }
+
+    public C0000F(Activity activity) {
+        this.f0a = activity;
+        for (int i = 0; i < 8; i++) {
+            this.f2k[i] = (byte) 0;
+        }
+        this.f1c = 0;
+    }
+
+    public void onReceive(Context context, Intent intent) {
+        this.f2k[this.f1c] = (byte) intent.getExtras().getInt("id");
+        cc();
+        this.f1c++;
+        if (this.f1c == 8) {
+            this.f1c = 0;
+            this.f2k = new byte[8];
+            for (int i = 0; i < 8; i++) {
+                this.f2k[i] = (byte) 0;
+            }
+        }
+    }
+}
+```
+
+We see a `byte[]` array called "flag", but none of the bytes there are printable ascii chars, so we probably have to apply some kind of transformation to it. Also it seems one of the methods: `cc()` wasn't able to decompile properly. If we look at the other 3 java files, we don't see any reference to the `byte[] flag` from this java file. So what do we do now?
+
+Let's look a little further in the pseudocode. We see these 3 lines:
+
+```
+remove(filename),
+remove(v37),
+rmdir(path),
+```
+
+So it looks like it removes the `d.dex` file, and then close to the end of the function it calls `sub_710()`. Let's take a look at that function.
+
+```
+signed int sub_710()
+{
+  const char *v0; // esi@1
+  const char *v1; // eax@1
+  const char *v2; // eax@3
+  signed int result; // eax@5
+  __int32 v4; // esi@8
+  _BYTE *v5; // eax@8
+  void *v6; // edi@8
+  int v7; // eax@8
+  void *v8; // edx@9
+  char *v9; // edi@17
+  int v10; // esi@17
+  char v11; // al@18
+  int v12; // edx@18
+  FILE *v13; // [sp+28h] [bp-1C4h]@1
+  _BYTE *v14; // [sp+2Ch] [bp-1C0h]@8
+  char nptr[4]; // [sp+33h] [bp-1B9h]@8
+  int v16; // [sp+37h] [bp-1B5h]@8
+  char v17; // [sp+3Bh] [bp-1B1h]@8
+  char v18; // [sp+3Ch] [bp-1B0h]@17
+  char haystack; // [sp+CCh] [bp-120h]@3
+  int v20; // [sp+D0h] [bp-11Ch]@8
+  int v21; // [sp+1CCh] [bp-20h]@1
+
+  v21 = _stack_chk_guard;
+  v0 = sub_680(1, 114);
+  v1 = sub_680(8, 72);
+  v13 = fopen(v1, v0);
+  if ( v13 )
+  {
+    do
+    {
+      if ( !fgets(&haystack, 256, v13) )
+        goto LABEL_5;
+      v2 = sub_680(3, 101);
+    }
+    while ( !strstr(&haystack, v2) );
+    v17 = 0;
+    *(_DWORD *)nptr = *(_DWORD *)&haystack;
+    v16 = v20;
+    v4 = sysconf(40);
+    v5 = (_BYTE *)strtoul(nptr, 0, 16);
+    v14 = v5;
+    v6 = v5;
+    v7 = mprotect(v5, v4 * (1968 / v4 + 8), 7);
+    if ( !v7 )
+    {
+      v8 = v6;
+      if ( 8 * v4 > 0 )
+      {
+        while ( *(_BYTE *)v8 != 100
+             || *((_BYTE *)v8 + 1) != 101
+             || *((_BYTE *)v8 + 2) != 120
+             || *((_BYTE *)v8 + 3) != 10
+             || *((_BYTE *)v8 + 4) != 48 )
+        {
+          ++v7;
+          v8 = (char *)v8 + 1;
+          if ( v7 == 8 * v4 )
+            goto LABEL_5;
+        }
+        qmemcpy(&v18, &unk_15A0, 0x90u);
+        v9 = &v18;
+        v10 = v7 - (_DWORD)&v18;
+        do
+        {
+          v11 = *v9;
+          v12 = (int)&(v9++)[v10];
+          v14[v12 + 1824] = v11 ^ 0x5A;
+        }
+        while ( v9 != &haystack );
+      }
+LABEL_5:
+      fclose(v13);
+      result = 1;
+      goto LABEL_6;
+    }
+  }
+  result = 0;
+LABEL_6:
+  if ( v21 != _stack_chk_guard )
+    sub_650();
+  return result;
+}
+```
+
+
 Our flag is `CTF{bacon_lettuce_tomato_lobster_soul}`
