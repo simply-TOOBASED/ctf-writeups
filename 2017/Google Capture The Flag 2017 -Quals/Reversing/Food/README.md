@@ -50,5 +50,37 @@ So essentially what the method is doing is loading a native library, and looking
 
 So the `.so` tells us that it's a shared library file, and according to what the Android Docs said above, we're looking for a JNI_OnLoad_libname function cause that is what invoked, so the flag will probably be somewhere in that function.
 
+So now we decompile the `libcook.so` file using IDA Pro. The psuedocode that IDA gives us is in the file [libcook.c](./libcook.c). On the side we can view the assembly code for the `JNI_OnLoad` function, so let's look at that.
+
+![Imgur](http://i.imgur.com/cXZUAYo.png)
+
+Initially, we see a lot of `mov` statements with large hex numbers, so it looks like those values are being put onto the stack. After these values are put on the stack, then the function `sub_680` is called. This assembly code corresponding to this statement in the pseudocode: `filename = (char *)sub_680(21, 32);`.
+
+Now let's look at `sub_680`. The following is the psuedocode for the function:
+
+```
+_BYTE *__cdecl sub_680(int a1, char a2)
+{
+  _BYTE *v2; // ebp@1
+  int v3; // ecx@1
+  unsigned int v4; // edx@2
+
+  v2 = malloc(2 * a1 + 1);
+  v3 = 0;
+  if ( a1 > 0 )
+  {
+    do
+    {
+      v4 = *((_DWORD *)&a2 + v3);
+      v2[2 * v3] = ~((BYTE1(v4) | ~*(&a2 + 4 * v3)) & (v4 | ~BYTE1(v4)));
+      v2[2 * v3++ + 1] = (v4 >> 16) ^ BYTE3(v4);
+    }
+    while ( v3 != a1 );
+  }
+  v2[2 * a1] = 0;
+  return v2;
+}
+```
+
 
 Our flag is `CTF{bacon_lettuce_tomato_lobster_soul}`
