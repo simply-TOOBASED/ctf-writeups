@@ -82,5 +82,10 @@ _BYTE *__cdecl sub_680(int a1, char a2)
 }
 ```
 
+So analyzing the function we see a couple of things, first it frees up memory using `malloc`. Then it does a do-while loop in which we take the address of `a2` (one of the inputs), cast it to a `_DWORD` pointer, add `v3` to this pointer, and then dereference the pointer. This is typical psuedocode IDA will give you when looping through some kind of array, we don't see any array. Remember those `mov` statements from earlier? All of those values were added to the stack, and `v4` is basically just looping through all of those values. The loop runs `a1` times, and if we see how many values are added to the stack through the `mov` statements, it's 21, and we also see 21 as a parameter to the `sub_680` function, so that confirms that the loop is probably looping through the values we added to the stack
+
+With the line `filename = (char *)sub_680(21, 32);`, `32` is what's passed to `a2`, so if we look at the stack and the assembly code, that's the `mov     [esp+0ECh+mode], 25410F20h` line (32 in hex is 0x20). Because the `char` type in c is only 1 byte, we can only pass one byte as the value of `a2`, that's the reason why 32 is used as opposed to 0x25410F20, so the last byte (0x20) is being passed as the parameter. But, as we see in the psuedocode, it casts the addess as a `_DWORD` pointer, so when we derefence it, `v4` will have the value of 0x25410F20, because that value can be stored in a `_DWORD`.
+
+So `v4` is looping through the values we added to the stack, and then it's doing some computations and storing them where we freed memory using `malloc`. Then it returns v2, so it's returning 
 
 Our flag is `CTF{bacon_lettuce_tomato_lobster_soul}`
