@@ -168,7 +168,7 @@ remove(v37),
 rmdir(path),
 ```
 
-So it looks like it removes the `d.dex` file, and then close to the end of the function it calls `sub_710()`. Let's take a look at that function.
+So it looks like it removes the `d.dex` file, and then close to the end of `JNI_OnLoad` there's a function call to `sub_710()`. Let's take a look at that function.
 
 ```
 signed int sub_710()
@@ -258,5 +258,33 @@ LABEL_6:
 }
 ```
 
+We first notice two calls to the `sub_680` function again, and then it calls `fopen`, so what file are we opening? If we use our script again, the value of `v1` is `/proc/self/maps`. So we're reading the process memory of our apk (Linux and Android are actually very similar in how they work and their architecture).
+
+This line: `fgets(&haystack, 256, v13)` is reading 256 chars from `/proc/self/maps` and storing those chars in `haystack`. There's another call to `sub_680`: `v2 = sub_680(3, 101);`, and `v2` has a value of `/d.dex`, so looking at that first do-while loop, we're reading the process memory of our apk and we're looking for `/d.dex`. The way `/proc/self/maps` works is that it lists each process in a table-like format and then displays information about each process such as the address range each process take up, the permissions (read/write/execute) associated with the memory, and other things. So we're looking for the `/d.dex` process specifically. Let's look at these 2 lines:
+
+```
+*(_DWORD *)nptr = *(_DWORD *)&haystack;
+v5 = (_BYTE *)strtoul(nptr, 0, 16);
+```
+
+So we are taking 4 bytes from where where `haystack` is stored and then we're storing that value in `nptr` (which has type `char[4]`, so it's a string. Then we take the number from that string, convert it from base 16, and then store that value in `v5`. So whenever you look at `/proc/self/maps`, the beginning of each line for a process starts with the starting address of where the memory is stored, so what these 2 lines are doing is it's storing the starting address for where `/d.dex` stores its memory and it's putting that value in `v5`. From what we did previously, we can assume that this starting value is `0x00001640`, because that was the starting address we used when writing to the `d.dex` file. 
+
+If we look at the rest of the code we see this line: `qmemcpy(&v18, &unk_15A0,  + 0x90u);`, which is basically copying the data from address `&unk_15A0 + 0x90u` to `&v18`, and also this line: `v14[v12 + 1824] = v11 ^ 0x5A;`. The way the pseudocode is written is a little confusing, but because we're assuming `v5` is `0x00001640` then `v7` will still have a value of `0` because the first 5 bytes (0x1640-0x1644) are `100, 101, 120, 10, 48` exactly so the while loop doesn't run at all. Now looking at the assembly code it seems `v12 = (int)&(v9++)[v10];` is just taking the pointers `v9` and `v10`, adding their values, and `v12` is that value, so it's a pointer from the sum of 2 other pointers. Because `v7` is `0`, however, `v12` will also have a value of `0`. `v14 = v5`, so `v14` starts are the address `0x00001640` and we have to add 1824 to that. Then we replace `0x00001640 + 1824` to `0x00001640 + 1824 + 90` with the 90 bytes from the `qmemcpy` call xored with `0x5A`, which is done in the following python code: 
+
+```
+a = '49 5E 52 5A 79 1B 7B 5A 7C 5B 66 5A 5A 5A 48 5A 6F 1A 55 5A 12 58 5B 5A 0E 09 5F 5A 12 59 59 5A ED 68 D7 78 15 58 5B 5A 82 5A 5A 5B 72 A8 78 5A 45 5A 2A 7A 7E 5A 4A 5A 40 5B 5A 5A 34 7A 7F 5A 4A 5A 50 5A 63 5A 47 5A 0E 0A 58 5A 34 4A 5B 5A 5A 5A 56 5A 78 5B 45 5A 38 58 5E 5A 0E 09 5F 5A 2B 7A 78 5A 68 5A 56 58 2A 7A 7E 5A 7B 5A 48 48 2B 6A 4F 5A 4A 58 56 5A 34 4A 4C 5A 5A 5A 54 5A 5A 59 5B 5A 52 5A 5A 5A 40 41 44 5E 4F 58 48 5D';
+
+li = a.split(' ');
+newli = [];
+
+for char in li:
+    newli.append(chr(int(char, 16) ^ 0x5A).encode('hex'))
+    
+print ''.join(newli);
+```
+
+This returns `130408002341210026013c000000120035400f00480201005453050048030300b7328d224f020100d800000128f222001f007020240010001a0100006e20250010000a0039001d00545002006e10010000000c0022011f0062020400545305007120220032000c0270202400210012127130150010020c006e10160000000e0000030100080000001a1b1e0415021207`
+
+Now using a hex editor, you can replace those 90 bytes with the new 90 bytes we just computed and that file is now [d_new.dex](d_new.dex). Once again we decompile it again and you can view the decompiled files in the [d_new.dex_source_from_JADX](d_new.dex_source_from_JADX) folder. Going back to our [C0000F.java](./d_new.dex_source_from_JADX/com/google/ctf/food/C0000F.java), we now see that the `cc()` function has decompiled successfully!
 
 Our flag is `CTF{bacon_lettuce_tomato_lobster_soul}`
