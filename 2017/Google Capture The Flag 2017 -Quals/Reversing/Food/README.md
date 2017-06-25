@@ -287,4 +287,66 @@ This returns `130408002341210026013c000000120035400f00480201005453050048030300b7
 
 Now using a hex editor, you can replace those 90 bytes with the new 90 bytes we just computed and that file is now [d_new.dex](d_new.dex). Once again we decompile it again and you can view the decompiled files in the [d_new.dex_source_from_JADX](d_new.dex_source_from_JADX) folder. Going back to our [C0000F.java](./d_new.dex_source_from_JADX/com/google/ctf/food/C0000F.java), we now see that the `cc()` function has decompiled successfully!
 
+```
+package com.google.ctf.food;
+
+import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.widget.Toast;
+
+public class C0000F extends BroadcastReceiver {
+    private static byte[] flag = new byte[]{(byte) -19, (byte) 116, (byte) 58, (byte) 108, (byte) -1, (byte) 33, (byte) 9, (byte) 61, (byte) -61, (byte) -37, (byte) 108, (byte) -123, (byte) 3, (byte) 35, (byte) 97, (byte) -10, (byte) -15, (byte) 15, (byte) -85, (byte) -66, (byte) -31, (byte) -65, (byte) 17, (byte) 79, (byte) 31, (byte) 25, (byte) -39, (byte) 95, (byte) 93, (byte) 1, (byte) -110, (byte) -103, (byte) -118, (byte) -38, (byte) -57, (byte) -58, (byte) -51, (byte) -79};
+    private Activity f0a;
+    private int f1c;
+    private byte[] f2k = new byte[8];
+
+    public C0000F(Activity activity) {
+        this.f0a = activity;
+        for (int i = 0; i < 8; i++) {
+            this.f2k[i] = (byte) 0;
+        }
+        this.f1c = 0;
+    }
+
+    public void onReceive(Context context, Intent intent) {
+        this.f2k[this.f1c] = (byte) intent.getExtras().getInt("id");
+        cc();
+        this.f1c++;
+        if (this.f1c == 8) {
+            this.f1c = 0;
+            this.f2k = new byte[8];
+            for (int i = 0; i < 8; i++) {
+                this.f2k[i] = (byte) 0;
+            }
+        }
+    }
+
+    public void cc() {
+        byte[] bArr = new byte[]{(byte) 26, (byte) 27, (byte) 30, (byte) 4, (byte) 21, (byte) 2, (byte) 18, (byte) 7};
+        for (int i = 0; i < 8; i++) {
+            bArr[i] = (byte) (bArr[i] ^ this.f2k[i]);
+        }
+        if (new String(bArr).compareTo("\u0013\u0011\u0013\u0003\u0004\u0003\u0001\u0005") == 0) {
+            Toast.makeText(this.f0a.getApplicationContext(), new String(C0004.m0(flag, this.f2k)), 1).show();
+        }
+    }
+}
+```
+
+So in order to get our flag, we have to run `C0004.m0(flag, this.f2k)`, unfortunately we don't know what `this.f2k` is because of this line `this.f2k[this.f1c] = (byte) intent.getExtras().getInt("id");`. If we look in the [C0003S.java](./d_new.dex_source_from_JADX/com/google/ctf/food/C0003S.java) file, we see the following lines:
+
+```
+Intent intent = new Intent(C0003S.f3I);
+intent.putExtra("id", i);
+activity.sendBroadcast(intent);
+```
+
+And `i` can take on any random value from 0 to 32. However, we can figure out `this.f2k` by doing some simple xor: we know each value of `bArr[]` will be xored with each value from `this.f2k` to get a new `bArr[]`, but we know that `new String(bArr)` has to equal `"\u0013\u0011\u0013\u0003\u0004\u0003\u0001\u0005"`, so we know that `bArr[]` has to have values of `[0x13,0x11,0x13,0x3,0x4,0x3,0x1,0x5]` and then we can xor that with `new byte[]{(byte) 26, (byte) 27, (byte) 30, (byte) 4, (byte) 21, (byte) 2, (byte) 18, (byte) 7};` in order to get `this.f2k` and then we can get our flag. This is done in [FoodSolve.java](FoodSolve.java).
+
+When you run [FoodSolve.java](FoodSolve.java) you will get the flag: `CTF{bacon_lettuce_tomato_lobster_soul}`.
+
 Our flag is `CTF{bacon_lettuce_tomato_lobster_soul}`
+
+Very fun and interesting problem, learned a lot about reversing apks!
