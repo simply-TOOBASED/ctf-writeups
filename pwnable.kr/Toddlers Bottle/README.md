@@ -1,7 +1,8 @@
 # fd
->Mommy! what is a file descriptor in Linux?<br><br>* try to play the wargame your self but if you are ABSOLUTE beginner, follow this tutorial link: https://www.youtube.com/watch?v=blAxTfcW9VU<br><br>`ssh fd@pwnable.kr -p2222 (pw:guest)`
+>Mommy! what is a file descriptor in Linux?<br><br>* try to play the wargame your self but if you are ABSOLUTE beginner, follow this tutorial link: https://www.youtube.com/watch?v=blAxTfcW9VU<br><br>ssh fd@pwnable.kr -p2222 (pw:guest)
 
-fd.c:
+Let's look at `fd.c`:
+```
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +24,7 @@ int main(int argc, char* argv[], char* envp[]){
         return 0;
 
 }
+```
 
 Pass in 0x1234 (4660) as input so that fd = 0 (so the program reads from STDIN). Then type "LETMEWIN" press enter and get the flag.
 
