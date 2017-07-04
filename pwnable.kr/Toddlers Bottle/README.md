@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
 
 We have to input a string that's 20 bytes, then the check_password function takes every 4 bytes as an int (the function takes the char pointer to our input and casts it to a int pointer and because ints are 4 bytes in c when we dereference the pointer we are getting 4 bytes of our string as opposed to just one if we have a char pointer) and adds all of the ints up and if it equals 0x21DD09EC we get the flag. We can't use \x00 or null bytes because then strlen will calculate our string input wrong cause null bytes will make our string appear "terminated". 
 
-Running the following command will get us the flag: `./col python -c 'print "\xe8\x05\xd9\x1d"+"\x01"*16'`
+Running the following command will get us the flag: ``./col `python -c 'print "\xe8\x05\xd9\x1d"+"\x01"*16'``
 
 flag: `daddy! I just managed to create a hash collision :)`
 
@@ -97,7 +97,11 @@ int main(int argc, char* argv[]){
 }
 ```
 
-Classic buffer overflow question. In the assembly we see that `$ebp-0x2c` is set for the buffer, and it checks if `$ebp + 0x8 == 0xcafebabe`. So we input 52 A's, then 0xcafebabe (in little endian, so "backwards"). We accomplish this with the following payload: `python -c "print 'A'*52+'\xbe\xba\xfe\xca'"`. However, it seems the program checks for stack smashing, so what we need to do is keep STDIN open once we get our shell, cause the program only checks for stack smashing at the end of the `func` function. So we modify our payload: `(python -c "print 'A'*52+'\xbe\xba\xfe\xca'"; cat)`. We run `(python -c "print 'A'*52+'\xbe\xba\xfe\xca'"; cat) | nc pwnable.kr 9000` and then run `ls`, see the flag file, and run `cat flag`, and get our flag.
+Classic buffer overflow question. In the assembly we see that `$ebp-0x2c` is set for the buffer, and it checks if `$ebp + 0x8 == 0xcafebabe`. So we input 52 A's, then 0xcafebabe (in little endian, so "backwards"). 
+
+We accomplish this with the following payload: `python -c "print 'A'*52+'\xbe\xba\xfe\xca'"`. However, it seems the program checks for stack smashing, so what we need to do is keep STDIN open once we get our shell, cause the program only checks for stack smashing at the end of the `func` function. Because of this, we modify our payload: `(python -c "print 'A'*52+'\xbe\xba\xfe\xca'"; cat)`. 
+
+We now run `(python -c "print 'A'*52+'\xbe\xba\xfe\xca'"; cat) | nc pwnable.kr 9000`, see that we do indeed have a shell, then run `ls`, see the flag file, and then run `cat flag`, and get our flag.
 
 flag: `daddy, I just pwned a buFFer :)`
 
