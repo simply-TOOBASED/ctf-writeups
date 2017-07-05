@@ -1,7 +1,6 @@
 # fd
->Mommy! what is a file descriptor in Linux?<br><br>* try to play the wargame your self but if you are ABSOLUTE beginner, follow this tutorial link: https://www.youtube.com/watch?v=blAxTfcW9VU<br><br>ssh fd@pwnable.kr -p2222 (pw:guest)
 
-Let's look at `fd.c`:
+`fd.c`:
 ```
 #include <stdio.h>
 #include <stdlib.h>
