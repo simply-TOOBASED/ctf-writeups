@@ -109,3 +109,56 @@ flag: `daddy, I just pwned a buFFer :)`
 This is a reversing question, so we're not given a c file, just the binary. If we try to load the binary in IDA, we see that many of the functions were unable to decompiled, and in GDB we can't seem to find the `main` function. Running `strings` on the binary file reveals that it was packed with [UPX](https://upx.github.io/). So we download UPX and unpack the file, getting a new binary. Now if we load this new binary into IDA, we see that everything decompiled successfully. If we look at the assembly of the `main` function, we see a variable called `flag`. We double click it and it reveals a string that looks like our answer.
 
 flag: `UPX...? sounds like a delivery service :)`
+
+# passcode
+
+`passcode.c`:
+```
+#include <stdio.h>
+#include <stdlib.h>
+
+void login(){
+        int passcode1;
+        int passcode2;
+
+        printf("enter passcode1 : ");
+        scanf("%d", passcode1);
+        fflush(stdin);
+
+        // ha! mommy told me that 32bit is vulnerable to bruteforcing :)
+        printf("enter passcode2 : ");
+        scanf("%d", passcode2);
+
+        printf("checking...\n");
+        if(passcode1==338150 && passcode2==13371337){
+                printf("Login OK!\n");
+                system("/bin/cat flag");
+        }
+        else{
+                printf("Login Failed!\n");
+                exit(0);
+        }
+}
+
+void welcome(){
+        char name[100];
+        printf("enter you name : ");
+        scanf("%100s", name);
+        printf("Welcome %s!\n", name);
+}
+
+int main(){
+        printf("Toddler's Secure Login System 1.0 beta.\n");
+
+        welcome();
+        login();
+
+        // something after login...
+        printf("Now I can safely trust you that you have credential :)\n");
+        return 0;
+}
+```
+
+The vulnerability in this question lies with the `scanf` where the program reads in `passcode1` and `passcode2`. You're supposed to pass in an address of a variable as the 2nd parameter, but the actual variable is passed in instead.
+
+
