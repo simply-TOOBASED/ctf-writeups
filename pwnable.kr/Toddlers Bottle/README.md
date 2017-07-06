@@ -106,7 +106,6 @@ flag: `daddy, I just pwned a buFFer :)`
 
 # flag
 
-This is a reversing question, so we're not given a c file, just the binary. If we try to load the binary in IDA, we see that many of the functions were unable to decompiled, and in GDB we can't seem to find the `main` function.
+This is a reversing question, so we're not given a c file, just the binary. If we try to load the binary in IDA, we see that many of the functions were unable to decompiled, and in GDB we can't seem to find the `main` function. Running `strings` on the binary file reveals that it was packed with [UPX](https://upx.github.io/). So we download UPX and unpack the file, getting a new binary. Now if we load this new binary into IDA, we see that everything decompiled successfully. If we look at the assembly of the `main` function, we see a variable called `flag`, and if he double click it, we see a string that looks like our flag.
 
-
-
+flag: `UPX...? sounds like a delivery service :)`
