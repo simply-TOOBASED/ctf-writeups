@@ -1,1 +1,1 @@
->I hack your brain! <br/> <br/> hack.py
+>I hack your brain! <br/> <br/> [hack.py](./hack.py)
