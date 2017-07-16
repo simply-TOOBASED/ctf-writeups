@@ -27,7 +27,7 @@ Let's first rewrite `hack`. When the for loop runs for the first time, `hack = o
 
 So the plan is to loop through each candidate of `pad` and then get the possible values for the other characters of our flag, and then check if the 14-length string is our flag. We can check by just using the same `hack.py`, just modifying the last line to check if `hack == 64364485357060434848865708402537097493512746702748009007197338675`
 
-The final code is in [solution.py](./solution.py):
+The final code is in [solution.py](./solution.py). Things to note: I first try the last character of the flag as `63` or `?` because it seems the most logical (I got lucky that it was the right one). If it wasn't right, then I'd have to change my code slightly to replace the occurences of `63` with my new guess for the last char. Also `factorization` doesn't contain all of the factors of `64364485357060434848865708402537097493512746702748009007197338675`, rather the factors of `64364485357060434848865708402537097493512746702748009007197338675//63`. I took out `63` from the factorization as `pad` can't take on any values that are divisible by 63, then that would mean that `64364485357060434848865708402537097493512746702748009007197338675` is divisible by `63^2` (which it isn't).
 ```
 import itertools
 from operator import mul
