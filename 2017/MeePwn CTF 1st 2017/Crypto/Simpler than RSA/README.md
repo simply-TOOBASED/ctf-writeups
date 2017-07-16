@@ -53,9 +53,23 @@ So what do we do with the `totient(n)`? Well according to [Euler's Theorem](http
 
 We want to find a smaller solution, so let's assume that `x` is less than or equal to our `totient(n)` Starting with `a^totient(n) = 1 mod n`, we express `totient(n) = q * x + r`, so `q` is the quotient and `r` is the remainder (r < x). So `1 = a^(totient(n)) mod n = a^(q * x + r) mod n = 1 * a^r mod n = a^r mod n`. We know that r < x, so the only solution is `r = 0`, so that means `totient(n) = q * x`, so that means the smallest solution to `a^x = 1 mod n` is a divisor of `totient(n)`. Note that this includes `totient(n)`, and this value is related to the [Carmichael function](https://en.wikipedia.org/wiki/Carmichael_function). 
 
-So we can test the divisors of our `totient(n) = p * (p - 1) * (q - 1)` and see which ones gives us useful information. The plan is to get a divisor so that `h^r` raised to the power of our divisor is 1 and we can remove that from the other equation but the other two values aren't 1. We see that using `(p - 1) * (q - 1)` accomplishes this.
+So we can test the divisors of our `totient(n) = p * (p - 1) * (q - 1)` and see which ones gives us useful information. The plan is to get a divisor so that `h^r` raised to the power of that divisor is 1 and we can remove that from the our equation but the other two values aren't 1. We see that using `(p - 1) * (q - 1)` accomplishes this.
 
-Basically `h^r` raised to the power of `(p - 1) * (q - 1)` or `h^(r * (p - 1) * (q - 1))` equals 1 no matter what value `r` is because `h^((p - 1) * (q - 1))` equals 1, so 1 to the power of anything is still 1. If we raise our `c` and `g^m` to the power of `(p - 1) * (q - 1)` however, we don't get 1, so now we can just brute force through the possible values of `m` (since `m` is a character of our flag, it's in between 0 and 255 inclusive). The following script accomplishes this:
+Basically `h^r` raised to the power of `(p - 1) * (q - 1)` or `h^(r * (p - 1) * (q - 1))` equals 1 no matter what value `r` is because `h^((p - 1) * (q - 1))` equals 1, and 1 to the power of anything is still 1. If we raise our `c` and `g` to the power of `(p - 1) * (q - 1)` however, we don't get 1.
+
+From our original equation: 
+
+`c = (g^m) * (h^r) mod n`
+
+We raise both sides to the power of `(p - 1) * (q - 1)`
+
+`c^((p - 1) * (q - 1)) = g^(m * (p - 1) * (q - 1)) * h^(r * (p - 1) * (q - 1)) mod n`
+
+As we stated above `h^(r * (p - 1) * (q - 1)) = 1 mod n` so our equation is now
+
+`c^((p - 1) * (q - 1)) = g^(m * (p - 1) * (q - 1)) mod n`
+
+Now we can just brute force through the possible values of `m` (since `m` is a character of our flag, it's in between 0 and 255 inclusive) and check when `c^((p - 1) * (q - 1)) == g^(m * (p - 1) * (q - 1)) mod n`. The following script accomplishes this:
 ```
 n = 1235280093599323856390922798440377476467763531842392869674688408727824382702235317
 g = 1110549711091392805024587195974719739929628997819528005374351081843256209971586072
