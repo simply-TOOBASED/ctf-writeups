@@ -159,6 +159,8 @@ int main(){
 }
 ```
 
-The vulnerability in this question lies with the `scanf` where the program asks to enter `passcode1` and `passcode2`. You're supposed to pass in an address of a variable as the 2nd parameter, but the actual variable is passed in instead. So when we run the program, if we type in a random string, we will get a segmentation fault, because the program is expecting our input to be a pointer to something in the memory. If we give it a pointer that points to nothing in the memory (an illegal memory location), we get a segmentation fault. As a result, we are probably not going to able to find a pointer that points to We can exploit this to our advantage as follows
+The vulnerability in this question lies with the `scanf` where the program asks to enter `passcode1` and `passcode2`. You're supposed to pass in an address of a variable as the 2nd parameter, but the actual variable is passed in instead. So when we run the program, if we type in a random string, we will get a segmentation fault, because the program is expecting our input to be a pointer to something in the memory. If we give it a pointer that points to nothing in the memory (an illegal memory location), we get a segmentation fault.
+
+We can exploit this to our advantage as follows.
 
 
