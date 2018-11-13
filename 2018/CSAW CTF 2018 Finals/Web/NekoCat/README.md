@@ -96,4 +96,4 @@ class Flagon(object):
 ```
 The application has a SECRET_KEY that it uses to create SecureCookie's. The first thing we need to do is figure out how to get the SECRET_KEY so we can sign our own cookies. Once we can sign our own cookies, we can utilize an RCE to get the flag. Because SecureCookie uses [pickle](https://docs.python.org/3/library/pickle.html) by default for serialization, we can exploit the deserialization to execute python code. For more information about python pickle deserialization vulnerabilities, you can visit this [link](https://crowdshield.com/blog.php?name=exploiting-python-deserialization-vulnerabilities).
 
-Trying to directly access http://web.chal.csaw.io:1003/flaginfo returns a 404, which makes sense as our ip address 
+In order to get the value of SECRET_KEY, we have to be able to access http://web.chal.csaw.io:1003/flaginfo. Trying to directly access it returns a 404, which makes sense because according to the source code, we can only view the webpage if our ip address is 127.0.0.1 or localhost.
