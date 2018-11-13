@@ -203,7 +203,7 @@ The `path` variable will contain the part of our URL after `http://127.0.0.1:500
 
 ![Imgur](https://i.imgur.com/gOfFJsJ.png)
 
-With our newly created post, we have obtained the value of `SECRET_KEY` as `superdupersecretflagonkey`. We can now sign our own cookies and do on RCE to get our flag. To generate the cookie, we will use this code (note the `username` is the username of the admin that we are logged in as):
+With our newly created post, we have obtained the value of `SECRET_KEY` as `superdupersecretflagonkey`. We can now sign our own cookies and do on RCE to get our flag. To generate the cookie, we will use this code (note the `username` is the username of the admin that we are logged in as, although it really doesn't matter):
 
 ```python
 import os
@@ -232,6 +232,7 @@ FbFYqFStc9FXQBRsRz/NJHQO01c=?name=Y3N1YnByb2Nlc3MKY2hlY2tfb3V0cHV0CnAwCigobHAxCl
 ```
 
 Setting this as our new `session_data` cookie gets us the flag.
+
 ![Imgur](https://i.imgur.com/3ibPmKI.png)
 
 Flag:
