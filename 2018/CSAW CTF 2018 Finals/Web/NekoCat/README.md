@@ -54,3 +54,5 @@ class Flagon(object):
         self.url_map.add(Rule(flaginfo_route, endpoint=flaginfo_route))
 ````
 In order to get the value of SECRET_KEY, we have to be able to access http://web.chal.csaw.io:1003/flaginfo. Trying to directly access it returns a 404, which makes sense because according to the source code, we can only view the webpage if our ip address is `127.0.0.1` or localhost. Obviously we aren't localhost, so we need to find a different approach.
+
+In app.py
