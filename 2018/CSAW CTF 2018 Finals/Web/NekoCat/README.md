@@ -25,8 +25,6 @@ class Request(BaseRequest):
             return SecureCookie(secret_key=SECRET_KEY)
         return SecureCookie.unserialize(data, SECRET_KEY)
 
-...
-
 def flagoninfo(request):
     if request.remote_addr != "127.0.0.1":
         return render_template("404.html")
