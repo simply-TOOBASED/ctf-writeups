@@ -25,7 +25,7 @@ class Request(BaseRequest):
             return SecureCookie(secret_key=SECRET_KEY)
         return SecureCookie.unserialize(data, SECRET_KEY)
 ```
-The application has a SECRET_KEY that it uses to create SecureCookie's. The first thing we need to do is figure out how to get the SECRET_KEY so we can sign our own cookies. Once we can sign our own cookies, we can utilize an RCE to get the flag. Because SecureCookie uses [pickle](https://docs.python.org/3/library/pickle.html) by default for serialization, we can exploit the deserialization to execute python code. For more information about python pickle deserialization vulnerabilities, you can visit this [link](https://crowdshield.com/blog.php?name=exploiting-python-deserialization-vulnerabilities).
+The application has a `SECRET_KEY` that it uses to create SecureCookie's. The first thing we need to do is figure out how to get the `SECRET_KEY` so we can sign our own cookies. Once we can sign our own cookies, we can utilize an RCE to get the flag. Because SecureCookie uses [pickle](https://docs.python.org/3/library/pickle.html) by default for serialization, we can exploit the deserialization to execute python code. For more information about python pickle deserialization vulnerabilities, you can visit this [link](https://crowdshield.com/blog.php?name=exploiting-python-deserialization-vulnerabilities).
 
 ```python
 def flagoninfo(request):
@@ -117,13 +117,13 @@ RequestBin is a simple site to log HTTP requests, so we can use the service to l
 
 ![Imgur](https://i.imgur.com/KEb29NL.png)
 
-We have successfully obtained the admin's cookies, but what do we do with this now? Also take note with value of the `Referer` header:
+We have successfully obtained the admin's cookies, but what do we do with this now? Also take note of the value of the `Referer` header:
 
 ```
 Referer: http://127.0.0.1:5000/post?id=20809&instance=cf665777-b943-42ad-bf5e-332f8fc7d2ed
 ```
 
-The ip address is `127.0.0.1`! This means the admin is running localhost, so we can abuse this to access `/flaginfo`! Looking at app.py again:
+The ip address is `127.0.0.1`! This means the admin is running localhost, so we can abuse this to access `/flaginfo`! Looking at [app.py](https://github.com/DDOS-Attacks/ctf-writeups/blob/master/2018/CSAW%20CTF%202018%20Finals/Web/NekoCat/app.py) again:
 
 ```python
 def get_post_preview(url):
@@ -153,4 +153,48 @@ def get_post_preview(url):
     return None
 ```
 
-Using this `get_post_preview`, we can make the 
+Using the `get_post_preview` function, if the link is `http://127.0.0.1:5000/flaginfo`, then we can access the value of `SECRET_KEY`! However looking at the `newpost` function:
+
+```python
+@app.route('/newpost')
+@login_required
+@apply_csp
+def newpost(request):
+    post = request.form.get('submission-text')
+    if (len(post) > 280):
+        return redirect('/')
+
+    preview = None
+    link = None
+
+    for word in post.split(' '):
+        if word.startswith('[link]'):
+            link = " ".join(word.split('[link]')[1:]).strip()
+            if verified_user(session, request.session.get('username'))[0]:
+                preview = get_post_preview(link)
+            link = link
+            break
+
+    post = post.replace('[link]', '')
+
+    add_post(session, request.session.get('username'), post, link, preview)
+
+    return redirect('/')
+```
+
+It seems we have to be a `verified_user` in order to use the `get_post_preview` function. Thankfully, the admin is a verified user! Using the admin's cookies we just stole, we can login as admin and then make a post with the `/flaginfo` link and obtain the value of `SECRET_KEY`. Using the cookie value we had before:
+
+```
+session_data="/V38m03gQsL5Q3kswHnyy6dDHUM=?name=gANYCAAAAE5la28gQ2F0cQAu&username=gANYDQAAAG1lb3dfY2Y2NjU3NzdxAC4="
+```
+
+We can replace the current value of our `session_data` cookie with this value, and if we reload the page, we're logged in as the admin!
+
+![Imgur](https://i.imgur.com/CFpWEz8.png)
+
+Now we create a post with `http://127.0.0.1:5000///flaginfo` and obtain the value of `SECRET_KEY`. Why are there 3 slashes instead of one? Because of this check:
+
+```python
+    if path.startswith('/flaginfo'):
+        return None
+```
