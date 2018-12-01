@@ -1,3 +1,7 @@
+# Background
+This is a write-up for one of the web challenges (500 pts) at the CSAW CTF Finals 2018. I participated under the team Mad H@tters, and represented the GreyHat club at Georgia Tech. This challenge involved leveraging XSS to obtain a secret key so you could create your own cookies and exploit an python pickle RCE to obtain the flag. It was a very challenging problem and I learned a lot solving it.
+
+# Challenge
 > Flag is in /flag.txt
 > 
 > http://web.chal.csaw.io:1003
@@ -25,6 +29,8 @@ class Request(BaseRequest):
             return SecureCookie(secret_key=SECRET_KEY)
         return SecureCookie.unserialize(data, SECRET_KEY)
 ```
+
+# SecureCookie
 The application has a `SECRET_KEY` that it uses to create SecureCookie's. The first thing we need to do is figure out how to get the `SECRET_KEY` so we can sign our own cookies. Once we can sign our own cookies, we can utilize an RCE to get the flag. Because SecureCookie uses [pickle](https://docs.python.org/3/library/pickle.html) by default for serialization, we can exploit the deserialization to execute python code. For more information about python pickle deserialization vulnerabilities, you can visit this [link](https://crowdshield.com/blog.php?name=exploiting-python-deserialization-vulnerabilities).
 
 ```python
@@ -54,6 +60,8 @@ class Flagon(object):
         self.url_map.add(Rule(flaginfo_route, endpoint=flaginfo_route))
 ````
 In order to get the value of SECRET_KEY, we have to be able to access http://web.chal.csaw.io:1003/flaginfo. Trying to directly access it returns a 404, which makes sense because according to the source code, we can only view the webpage if our ip address is `127.0.0.1` or localhost. Obviously we aren't localhost, so we need to find a different approach.
+
+# XSS
 
 In [app.py](https://github.com/DDOS-Attacks/ctf-writeups/blob/master/2018/CSAW%20CTF%202018%20Finals/Web/NekoCat/app.py), we see the following:
 
@@ -105,6 +113,7 @@ We can use `javascript:` URLs to leverage XSS! A `javascript:` URL will allow us
 javascript:document.location='http://www.google.com/'
 ```
 
+# Obtaining the admin's cookies
 And the admin clicks on that link, then he would be redirected to www.google.com! Now we construct our own link to steal the admin's cookies. The payload is as follows:
 
 ```javascript
@@ -152,7 +161,7 @@ def get_post_preview(url):
 
     return None
 ```
-
+# Accessing /flaginfo and obtaining SECRET_KEY
 Using the `get_post_preview` function, if the link is `http://127.0.0.1:5000/flaginfo`, then we can access the value of `SECRET_KEY`! However looking at the `newpost` function:
 
 ```python
@@ -202,8 +211,8 @@ if path.startswith('/flaginfo'):
 The `path` variable will contain the part of our URL after `http://127.0.0.1:5000`, therefore by injecting more slashes than one, we don't change the actual URL when it's resolved, but it will change the value of `path` when parsing our URL so we can bypass the check. (Theoretically 2 slashes should work, but for some reason I had success with 3 and not 2).
 
 ![Imgur](https://i.imgur.com/gOfFJsJ.png)
-
-With our newly created post, we have obtained the value of `SECRET_KEY` as `superdupersecretflagonkey`. We can now sign our own cookies and do on RCE to get our flag. To generate the cookie, we will use this code (note the `username` is the username of the admin that we are logged in as, although it really doesn't matter):
+# Python pickle RCE to obtain flag
+With our newly created post, we have obtained the value of `SECRET_KEY` as `superdupersecretflagonkey`. We can now sign our own cookies and do an RCE to get our flag. To generate the cookie, we will use this code (note the `username` is the username of the admin that we are logged in as, although it really doesn't matter):
 
 ```python
 import os
