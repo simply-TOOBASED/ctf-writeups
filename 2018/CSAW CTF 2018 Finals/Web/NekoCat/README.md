@@ -1,5 +1,5 @@
 # Background
-This is a write-up for one of the web challenges (500 pts) at the CSAW CTF Finals 2018. I participated under the team Mad H@tters, and represented the GreyHat club at Georgia Tech. This challenge involved leveraging XSS to obtain a secret key so you could create your own cookies and exploit an python pickle RCE to obtain the flag. It was a very challenging problem and I learned a lot solving it.
+This is a write-up for one of the web challenges (500 pts) at the CSAW CTF Finals 2018. I participated under the team Mad H@tters, and represented the GreyHat club at Georgia Tech. This challenge involved leveraging XSS to obtain a secret key so you could create your own cookies and exploit an python pickle RCE to obtain the flag. It was a very challenging problem and I learned a lot solving it. I hope others will learn a lot as well reading this write-up.
 
 # Challenge
 > Flag is in /flag.txt
@@ -246,4 +246,13 @@ Setting this as our new `session_data` cookie gets us the flag.
 
 Flag:
 `flag{werks_on_my_box}`
+
+# Tips and Tricks
+This is just a list of tips and tricks when trying to tackle web problems like this.
+
+1. Based on the source code given, the website was hosted using Flask. This is a common Python web framework that's used it a lot of CTFs, and most challenges related to Flask have to do with the cookies, so that should be the first place to look. 
+
+2. Any challenge that involves some sort of "report" feature or "administrator" probably will involve XSS.
+
+3. Similiarly if the Python pickle library is used, there's probably some RCE involved.
 
