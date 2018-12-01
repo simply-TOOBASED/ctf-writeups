@@ -1,5 +1,8 @@
+# Forward
+This is a write-up for one of the web challenges (500 pts) at the CSAW CTF Finals 2018.
+
 # Background
-This is a write-up for one of the web challenges (500 pts) at the CSAW CTF Finals 2018. I participated under the team Mad H@tters, and represented the GreyHat club at Georgia Tech. This challenge involved leveraging XSS to obtain a secret key so you could create your own cookies and exploit an python pickle RCE to obtain the flag. It was a very challenging problem and I learned a lot solving it. I hope others will learn a lot as well reading this write-up.
+I participated under the team Mad H@tters, and represented the GreyHat club at Georgia Tech. This challenge involved leveraging XSS to obtain a secret key so you could create your own cookies and exploit an python pickle RCE to obtain the flag. It was a very challenging problem and I learned a lot solving it. I hope others will learn a lot as well reading this write-up.
 
 # Challenge
 > Flag is in /flag.txt
