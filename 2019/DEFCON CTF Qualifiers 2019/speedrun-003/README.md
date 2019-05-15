@@ -1,5 +1,4 @@
-# speedrun003 
-### Tags: speedrun, shellcoding, pwnable
+# speedrun-003 (speedrun, shellcoding, pwnable)
 
 **DISCLAIMER**: Solved after competition ended.
 
