@@ -113,7 +113,7 @@ So essentially in our shellcode we need the first `15` bytes xor'd together to e
 
 ## Exploit
 
-So our shellcode, as described earlier, needs to have the first `15` bytes xor'd together to equal the last `15` bytes xor'd together.
+**So our shellcode, as described earlier, needs to have the first `15` bytes xor'd together to equal the last `15` bytes xor'd together.**
 
 We are going to do a `execve(/bin/sh)` shellcode.
 
