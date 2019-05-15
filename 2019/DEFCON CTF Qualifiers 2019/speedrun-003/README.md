@@ -18,7 +18,7 @@ You're not ready.
 
 ```
 
-Lets look at the disassembly using IDA Pro and see what exactly the binay is doing:
+Lets look at the disassembly using IDA Pro and see what exactly the binary is doing:
 
 ```
 __int64 get_that_shellcode()
@@ -63,17 +63,17 @@ __int64 get_that_shellcode()
   return *MK_FP(__FS__, 40LL) ^ v6;
 }
 ```
-This is a shellcode challenge, so the program wants us to craft shellcode that is exactly 30 bytes.
+This is a shellcode challenge, so the program wants us to craft shellcode that is exactly `30` bytes.
 
-Then it checks if we didn't have any NOP instructions (0x90) in our shellcode.
+Then it checks if we didn't have any NOP instructions (`0x90`) in our shellcode.
 
-Finally, it calls a function xor() and checks an equality.
+Finally, it calls a function `xor()` and checks an equality.
 
-If that equality returns true, then we call shellcode_it(). Shellcode_it() runs our shellcode by creating a memory map using mmap(), copying our shellcode to that address space and executing it.
+If that equality returns true, then we call `shellcode_it()`. `shellcode_it()` runs our shellcode by creating a memory map using `mmap()`, copying our shellcode to that address space and executing it.
 
 If you want a cleaner and simpler example, check out this [gist](https://gist.github.com/CoolerVoid/1557916).
 
-Lets look at the function xor():
+Lets look at the function `xor()`:
 
 ```
 __int64 __fastcall xor(__int64 a1, unsigned int a2)
@@ -88,9 +88,9 @@ __int64 __fastcall xor(__int64 a1, unsigned int a2)
 }
 ```
 
-So this function takes a buffer indicated by a1, and xors each byte starting from the beginning until buffer + a2, and returns the result.
+So this function takes a `buffer` indicated by `a1`, and xors each byte starting from the beginning until `buffer + a2`, and returns the result.
 
-Lets see how xor is used:
+Lets see how `xor()` is used:
 
 ```
 v1 = xor((__int64)&buf, 15u);
