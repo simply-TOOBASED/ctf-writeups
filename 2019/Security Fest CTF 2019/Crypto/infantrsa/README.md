@@ -2,7 +2,7 @@
 
 # Challenge
 
-We are given a text file challenge.txt, which shows a message encrypted (most likely the flag) using RSA encryption and a couple of other computations.
+We are given a text file [challenge.txt](./challenge.txt), which shows a message encrypted (most likely the flag) using RSA encryption and a couple of other computations.
 
 ```
 sage: n
@@ -18,3 +18,9 @@ sage: pow(5*p + 7*q, e2, n)
 sage: pow(m, 65537, n)
 350737073191287706245279077094231979383427790754965854345553308198026655242414098616160740809345373227967386631019166444200059217617767145638212921332649998355366471855362243913815961350928202877514312334160636449875324797999398782867956099814177529874805245928396620574131989901122269013123245826472838285
 ```
+
+Mathematically what are we given is the following equations:
+
+![equation](https://latex.codecogs.com/gif.latex?%282p&plus;3q%29%5E%7Be1%7D%20%5Cmod%20n)
+
+![equation](https://latex.codecogs.com/gif.latex?%285p&plus;7q%29%5E%7Be2%7D%20%5Cmod%20n)
