@@ -19,8 +19,18 @@ sage: pow(m, 65537, n)
 350737073191287706245279077094231979383427790754965854345553308198026655242414098616160740809345373227967386631019166444200059217617767145638212921332649998355366471855362243913815961350928202877514312334160636449875324797999398782867956099814177529874805245928396620574131989901122269013123245826472838285
 ```
 
-Mathematically what are we given is the following equations:
+Mathematically what we are given is the following equations:
 
 ![equation](https://latex.codecogs.com/gif.latex?%282p&plus;3q%29%5E%7Be1%7D%20%5Cmod%20n)
 
 ![equation](https://latex.codecogs.com/gif.latex?%285p&plus;7q%29%5E%7Be2%7D%20%5Cmod%20n)
+
+Now these 2 equations simplify to:
+
+![equation](https://latex.codecogs.com/gif.latex?%282p%29%5E%7Be1%7D&plus;%283q%29%5E%7Be1%7D%20%5Cmod%20n)
+
+![equation](https://latex.codecogs.com/gif.latex?%285p%29%5E%7Be2%7D&plus;%287q%29%5E%7Be2%7D%20%5Cmod%20n)
+
+This is because of [binomial expansion](https://en.wikipedia.org/wiki/Binomial_theorem). Every term in the expansion (except the first and last terms) has a "p^a * q^ b" term (where a and b are at least 1), and because we're working with modulo n, where n = p*q, this means that any number that is divisible by n will equal 0 modulo n. So all "p^a * q^ b" terms equal 0 modulo n and we can simplify the expansion.
+
+Now if we multiply the first equation by 5
