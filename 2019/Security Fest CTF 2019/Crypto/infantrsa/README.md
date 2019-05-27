@@ -33,4 +33,6 @@ Now these 2 equations simplify to:
 
 This is because of [binomial expansion](https://en.wikipedia.org/wiki/Binomial_theorem). Every term in the expansion (except the first and last terms) has a "p^a * q^ b" term (where a and b are at least 1), and because we're working with modulo n, where n = p*q, this means that any number that is divisible by n will equal 0 modulo n. So all "p^a * q^ b" terms equal 0 modulo n and we can simplify the expansion.
 
-Now if we multiply the first equation by 5
+Now if we take the first equation and raise it to the power of e2 and multiply by 5 ^ (e1 * e2). Similarly we take the second equation and raise it to the power of e1 and multiply by 2 ^ (e1 * e2). The equations then simplify to (using the concept of binomial expansion in modulo n as described above)
+
+
