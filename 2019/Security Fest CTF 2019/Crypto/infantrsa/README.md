@@ -62,3 +62,4 @@ print pow(c, d, n).lift().hex()[2:].replace('L', '').decode('hex')
 ```
 
 # Flag
+`ctf{dr4_m1g_b4kl4ng3s}`
