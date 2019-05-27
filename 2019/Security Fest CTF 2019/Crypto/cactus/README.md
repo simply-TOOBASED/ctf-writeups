@@ -134,4 +134,34 @@ for i in range(100):
 Couple of things to note:
 1. There's a bug with the line `random.randint(0, 2^self.range)`. It was probably intended to use exponentiation but in python the ^ operator means xor, so what's actually caluclated is 2 xor 1024 not 2 to the power of 1024.
 2. The e value used in binary should have 10 high bits.
-3. Because the secret is multiplied by a maximum value of 1026, which is pretty small, and the e value will most likely be large, the secret will probably be 
+3. Because the secret is multiplied by a maximum value of 1026, which is pretty small, and the e value will most likely be large, the secret will be mostly preserved.
+
+With this in mind we tried the following strategy: because we have 100 different outputs, there's a high chance that the r value used is a power of 2 (2^0 to 2^10), so we can take each output and right shift it from 0 to 10, get 11 different values, and decode each one as a string and see if it starts with `sctf`. We're assuming that when an r value of a power of 2 is used, that the e value contains powers of 2 bigger than 1024 so it doesn't affect the computation of secret * r.
+
+We implemented this attack with [this](./solution.py) python script:
+
+```python
+import binascii
+
+def solve(o):
+    st = []
+    for i in range(11):
+        ss_hex = hex(o >> i)[2:].replace('L', '')
+        if len(ss_hex) % 2 == 1:
+            ss_hex = '0' + ss_hex
+        st.append(binascii.unhexlify(ss_hex))
+    return st
+
+outputs = open("output.txt", "rb").readlines()
+for o in outputs:
+    w = solve(long(o))
+    for i in range(11):
+        if "sctf" in w[i]:
+            print w[i]
+```
+
+Running it we see the following flag twice: `sctf»wh@0ps_th4t_w4sît_sxp0nent1ati0n}`. Obviously the flag is close to a real flag but has a few errors (which implies that the e value used did slightly affect the secret * r computation). We can fix the errors by looking at the binary numerical value of the string, and then removing some of the bits of the bytes that look wrong.
+
+# Flag
+
+`sctf{wh00ps_th4t_w4snt_3xp0nent1ati0n}`
