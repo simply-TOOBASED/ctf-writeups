@@ -347,4 +347,4 @@ for inc in xrange(16):
 
 ```
 
-Because there's no time limit to input our answer, we just copy-and-pasted the values we needed from the server and then manually inputted the correct answer.
+Because there's no time limit to input our answer, we just copy-and-pasted the values we needed from the server and then manually inputted the correct tag.
