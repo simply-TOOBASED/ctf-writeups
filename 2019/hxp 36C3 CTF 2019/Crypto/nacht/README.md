@@ -55,6 +55,7 @@ clean:
 
 ```
 
+## Initial Analysis
 Looking a the python script, we know the following:
 * We are dealing with a MAC-based scheme (https://en.wikipedia.org/wiki/Message_authentication_code)
 * Key is randomly generated and is 32 bytes
@@ -124,7 +125,19 @@ Doing some more googling, we can find some more documentation on the function: h
 
 > The crypto_onetimeauth() function authenticates a message `m` whose length is `n` using a secret key `k` (crypto_onetimeauth_KEYBYTES bytes) and puts the authenticator into `out` (crypto_onetimeauth_BYTES bytes).
 
-The interesting thing to note here is that in our python script, the "message" and "key" are swapped! I.e. the key is used as the message, and the message is used as the key. 
+## The Bug
+The interesting thing to note here is that in [vuln.py](./vuln.py), the "message" and "key" are swapped! I.e. the key is used as the message, and the message is used as the key. This can be seen here:
+
+```python
+lib.crypto_onetimeauth_poly1305_tweet(tag, key, len(msg), msg)
+```
+
+The code should actually be:
+
+```python
+lib.crypto_onetimeauth_poly1305_tweet(tag, msg, len(msg), key)
+```
+
 
 This means that we have 32 tags for the same message but for 32 different keys, and we have to figure out what the message is so we can generate the correct tag for this message for another key to get our flag.
 
