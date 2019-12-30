@@ -200,7 +200,9 @@ class Poly1305(object):
 
 So the key used is split up into 2 128-bit integers to form `r` and `s`, and then these are used with the message to form the authenticator. We know our message is 32 bytes, so `for i in range(0, divceil(len(data), 16))` turns into `for i in range(0, 2)`. Looking at the `create_tag` function, all it's doing is converting 16 bytes of our message to a number, and then adding it to the tag, which is then multiplied by `r` and taken modulo `P`, where P is `0x3fffffffffffffffffffffffffffffffb`. 
 
-So we can define a `k1` and `k2` (2 128-bit integers which form the message), and then generate a modular equation in `k1` and `k2`, and then we can use a simple matrix to solve the modular equation. We have 32 equations, when we really only need 2. 
+So we can define a `k1` and `k2` (2 128-bit integers which form the message), and then generate a modular equation in `k1` and `k2`, and then we can use a simple matrix to solve the modular equation.
+
+## Caveat
 
 However, although we can solve modular equations similar to solving regular equations (ie we only need 2 equations if we have 2 unknowns), the solution we get won't necessarily be right due to the fact that our solution is correct in modulo P, but since there are infinitely many values that are equal modulo P, our solution can be any one of them.
 
@@ -213,11 +215,13 @@ To show this concept, take the following modular equations
 
 Accoring to [WolframAlpha](https://www.wolframalpha.com/input/?i=3x+%2B+y+%3D+1+%28mod+10%29%2C+9x+%2B+5y+%3D+7+%28mod+10%29), there are 2 solutions. This is just to show that just because we have 2 modular equations doesn't mean there's only 1 solution, sometimes there's none or more than 1.
 
-This is why we're given 32 equations instead of just 2, because although there's a solution that satisfies all 32 equations, when we choose 2 of them to solve, we may get the wrong solution. 
+This is why we're given 32 equations instead of just 2, because although there's a solution that satisfies all 32 equations, when we choose 2 of them to solve, we may get the wrong solution.
 
-The good news is that we can easily check if our solution correct or not. Our message is 32 bytes, which is split into 16 byte chunks (hence why the loop only runs twice), and "\x01" is added to each chunk before being converted to a number. What this means it that the MSB (most significant byte or 17th byte) should be 1 for both `k1` and `k2`. Once we figure out the correct `k1` and `k2` value, we just need to generate a correct tag for a new key, and we get the flag.
+## Finding the "right" solution
 
-We used Sage to do this, so we needed slghtly modify the `create_tag` function so it can handle symbolic variables. Solution code is below.
+The good news is that we can easily check if our solution correct or not. Our message is 32 bytes, which is split into 16 byte chunks (hence why the loop only runs twice), and "\x01" is added to each chunk before being converted to a number. What this means it that the MSB (most significant byte or 17th byte) should be 1 for both `k1` and `k2`. Once we figure out a candidate value for `k1` and `k2`, we make sure the 17th byte is 1, and then generate our tag.
+
+We used Sage to do this, so we needed slghtly modify the `create_tag` function to handle symbolic variables. [Solution](./exploit.sage) code is below.
 
 ```sage
 import binascii
