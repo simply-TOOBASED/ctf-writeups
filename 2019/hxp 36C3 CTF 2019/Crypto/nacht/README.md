@@ -330,4 +330,4 @@ for inc in xrange(16):
 
 ```
 
-We simply copy and pasted the output from the server simply because it was easier than directly interacting with it, and because there's no time limit on the server to input the correct answer.
+Because there's no time limit to input our answer, we just copy-and-pasted the values we needed from the server and then manually inputted the correct answer.
