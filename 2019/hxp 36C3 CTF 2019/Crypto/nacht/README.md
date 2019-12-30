@@ -215,7 +215,7 @@ To show this concept, take the following modular equations
 
 Accoring to [WolframAlpha](https://www.wolframalpha.com/input/?i=3x+%2B+y+%3D+1+%28mod+10%29%2C+9x+%2B+5y+%3D+7+%28mod+10%29), there are 2 solutions. This is just to show that just because we have 2 modular equations doesn't mean there's only 1 solution, sometimes there's none or more than 1.
 
-This is why we're given 32 equations instead of just 2, because although there's a solution that satisfies all 32 equations, when we choose 2 of them to solve, we may get the wrong solution.
+This is why we're given 32 equations instead of just 2, because although there's a solution that satisfies all 32 equations, when we choose 2 of them to solve, we may get the "wrong" solution.
 
 ## Finding the "right" solution
 
