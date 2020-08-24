@@ -119,5 +119,46 @@ The first thing that happens is our input is checked for length and if it's not 
 ```
 b'Encoded with random keys\x80\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc0'
 ```
+This also means that our message is always one block, so we only have to worry about the loop running once. The next thing that happens is that the `w` array is computed through the function `w = self.compute_w(block)`.
+```python
+  def compute_w(self, m):
+    w = list(struct.unpack('>16L', m))
+    for _ in range(16, 64):
+      a, b = w[-15], w[-2]
+      s0 = self.rotate_right(a, 7) ^ self.rotate_right(a, 18) ^ (a >> 3)
+      s1 = self.rotate_right(b, 17) ^ self.rotate_right(b, 19) ^ (b >> 10)
+      s = (w[-16] + w[-7] + s0 + s1) & 0xffffffff
+      w.append(s)
+    return w
+```
+Looking at the function, the only thing it's dependent on is `m`, or the 64-byte block of the message. Because our message is the same, the `w` array is also the same and we can compute this ourselves. You should get this `w` array when you compute it with the padded-message above:
+```
+w = [1164862319, 1684366368, 2003399784, 544366958, 1685024032, 1801812339, 2147483648, 0, 0, 0, 0, 0, 0, 0, 0, 192, 1522197188, 3891742175, 3836386829, 32341671, 928288908, 2364323079, 1515866404, 649785226, 1435989715, 250124094, 1469326411, 2429553944, 598071608, 1634056085, 4271828083, 4262132921, 2272436470, 39791740, 2337714294, 3555435891, 1519859327, 57013755, 2177157937, 1679613557, 2900649386, 612096658, 172526146, 2214036567, 3330460486, 1490972443, 1925782519, 4215628757, 2379791427, 2058888203, 1834962275, 3917548225, 2375084030, 1546202149, 3188006334, 4280719833, 726047027, 3650106516, 4058756591, 1443098026, 1972312730, 1218108430, 3428722156, 366022263]
+```
+Again, this stays constant since the message is constant. After the `w` array is computed, we run the compression function which is just a loop that runs the compression step function 64 times
+```python
+  def compression_step(self, state, k_i, w_i):
+    a, b, c, d, e, f, g, h = state
+    s1 = self.rotate_right(e, 6) ^ self.rotate_right(e, 11) ^ self.rotate_right(e, 25)
+    ch = (e & f) ^ (~e & g)
+    tmp1 = (h + s1 + ch + k_i + w_i) & 0xffffffff
+    s0 = self.rotate_right(a, 2) ^ self.rotate_right(a, 13) ^ self.rotate_right(a, 22)
+    maj = (a & b) ^ (a & c) ^ (b & c)
+    tmp2 = (tmp1 + s0 + maj) & 0xffffffff
+    tmp3 = (d + tmp1) & 0xffffffff
+    return (tmp2, a, b, c, tmp3, e, f, g)
 
+  def compression(self, state, w, round_keys = None):
+    if round_keys is None:
+      round_keys = self.k
+    for i in range(64):
+      state = self.compression_step(state, round_keys[i], w[i])
+    return state
+```
+Let's look closely at the `compression_step` function.
+* There is a state of 8 inputs.
+* The initial value of `state` is based off of the `self.h` array (which is constant and provided)
+* `tmp1`, `tmp2`, and `tmp3` are the values directly affected by `k_i`, which is the round key (and we don't know the first 8)
 
+## Reversing compression_step
+Now, assuming we have the output of the `compression_step` function, can we reverse it?
