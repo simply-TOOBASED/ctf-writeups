@@ -394,3 +394,40 @@ if __name__ == '__main__':
 ```
 ## Flag 
 `CTF{sHa_roUnD_k3Ys_caN_b3_r3vERseD}`
+
+## BONUS: More constraints
+For discussion purposes, I will explain how you can add more constraints to the z3 model. If we manually try to encode the same string with random round keys, we notice a pattern in the first 8 rounds, and a general pattern that applies to every round:
+### Test Run 1
+```
+Compression step: ['0x8d09f2a5', '0x6a09e667', '0xbb67ae85', '0x3c6ef372', '0x29c94cfa', '0x510e527f', '0x9b05688c', '0x1f83d9ab']
+Compression step: ['0x30e24489', '0x8d09f2a5', '0x6a09e667', '0xbb67ae85', '0xf0a2ce84', '0x29c94cfa', '0x510e527f', '0x9b05688c']
+Compression step: ['0x9f70f7b', '0x30e24489', '0x8d09f2a5', '0x6a09e667', '0xbbf1a468', '0xf0a2ce84', '0x29c94cfa', '0x510e527f']
+Compression step: ['0xb01abed9', '0x9f70f7b', '0x30e24489', '0x8d09f2a5', '0xaaa8fe56', '0xbbf1a468', '0xf0a2ce84', '0x29c94cfa']
+Compression step: ['0x9050b03a', '0xb01abed9', '0x9f70f7b', '0x30e24489', '0xfc384a63', '0xaaa8fe56', '0xbbf1a468', '0xf0a2ce84']
+Compression step: ['0x88be8cc6', '0x9050b03a', '0xb01abed9', '0x9f70f7b', '0xc24dce0a', '0xfc384a63', '0xaaa8fe56', '0xbbf1a468']
+Compression step: ['0xde572332', '0x88be8cc6', '0x9050b03a', '0xb01abed9', '0x1a0a78ec', '0xc24dce0a', '0xfc384a63', '0xaaa8fe56']
+Compression step: ['0xe3f7aecc', '0xde572332', '0x88be8cc6', '0x9050b03a', '0x92bdc67', '0x1a0a78ec', '0xc24dce0a', '0xfc384a63']
+```
+### Test Run 2
+```
+Compression step: ['0x515734e9', '0x6a09e667', '0xbb67ae85', '0x3c6ef372', '0xee168f3e', '0x510e527f', '0x9b05688c', '0x1f83d9ab']
+Compression step: ['0xec1cf5af', '0x515734e9', '0x6a09e667', '0xbb67ae85', '0xfd775f76', '0xee168f3e', '0x510e527f', '0x9b05688c']
+Compression step: ['0x4a9eebae', '0xec1cf5af', '0x515734e9', '0x6a09e667', '0x7839c308', '0xfd775f76', '0xee168f3e', '0x510e527f']
+Compression step: ['0x9e95822c', '0x4a9eebae', '0xec1cf5af', '0x515734e9', '0xc051bae', '0x7839c308', '0xfd775f76', '0xee168f3e']
+Compression step: ['0xab7e4af5', '0x9e95822c', '0x4a9eebae', '0xec1cf5af', '0xcd6f75d3', '0xc051bae', '0x7839c308', '0xfd775f76']
+Compression step: ['0x896cb0e3', '0xab7e4af5', '0x9e95822c', '0x4a9eebae', '0x2691bc04', '0xcd6f75d3', '0xc051bae', '0x7839c308']
+Compression step: ['0x44def41f', '0x896cb0e3', '0xab7e4af5', '0x9e95822c', '0x2c7c7370', '0x2691bc04', '0xcd6f75d3', '0xc051bae']
+Compression step: ['0xd716cf20', '0x44def41f', '0x896cb0e3', '0xab7e4af5', '0xe20f7972', '0x2c7c7370', '0x2691bc04', '0xcd6f75d3']
+```
+In the first iteration of `compression_step`, there are 6 of the 8 values that stay the same, because the other 2 values are dependent on `k_i` which is the only thing that changes. In addition, a value from one iteration will show up in the spot to the right in the next iteration for certain indices. Combining these 2 facts, tells us this:
+```
+Compression step: ['x', '0x6a09e667', '0xbb67ae85', '0x3c6ef372', 'x', '0x510e527f', '0x9b05688c', '0x1f83d9ab']
+Compression step: ['x', 'x', '0x6a09e667', '0xbb67ae85', 'x', 'x', '0x510e527f', '0x9b05688c']
+Compression step: ['x', 'x', 'x', '0x6a09e667', 'x', 'x', 'x', '0x510e527f']
+Compression step: ['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']
+Compression step: ['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']
+Compression step: ['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']
+Compression step: ['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']
+Compression step: ['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']
+```
+Because these values stay the same for every encryption, we can add these constraints to our model and have a more reliable script.
