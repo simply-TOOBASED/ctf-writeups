@@ -345,18 +345,6 @@ def rotate_right(v, n):
   w = (v >> n) | (v << (32 - n))
   return w & 0xffffffff
 
-def compression_step_inv(self, state, k_i, w_i):
-  tmp2, a, b, c, tmp3, e, f, g = state
-  s0 = self.rotate_right(a, 2) ^ self.rotate_right(a, 13) ^ self.rotate_right(a, 22)
-  ch = (e & f) ^ (~e & g)
-  s1 = self.rotate_right(e, 6) ^ self.rotate_right(e, 11) ^ self.rotate_right(e, 25)
-  maj = (a & b) ^ (a & c) ^ (b & c)
-  tmp1 = (tmp2 - s0 - maj) % 2**32
-  h = (tmp1 - s1 - ch - k_i - w_i) % 2**32
-  d = (tmp3 - tmp1) % 2**32  
-  print("Compression step:", list(map(hex, (a, b, c, d, e, f, g, h))))
-  return (a, b, c, d, e, f, g, h)
-
 def compression_step_inv_z3(state, k_i, w_i):
   tmp2, a, b, c, tmp3, e, f, g = state
   s0 = rotate_right(a, 2) ^ rotate_right(a, 13) ^ rotate_right(a, 22)
@@ -368,19 +356,6 @@ def compression_step_inv_z3(state, k_i, w_i):
   d = (tmp3 - tmp1) % 2**32  
   #print("Compression step:", list(map(hex, (a, b, c, d, e, f, g, h))))
   return (a, b, c, d, e, f, g, h)
-
-  
-def compression_step(self, state, k_i, w_i):
-  a, b, c, d, e, f, g, h = state
-  s1 = self.rotate_right(e, 6) ^ self.rotate_right(e, 11) ^ self.rotate_right(e, 25)
-  ch = (e & f) ^ (~e & g)
-  tmp1 = (h + s1 + ch + k_i + w_i) & 0xffffffff
-  s0 = self.rotate_right(a, 2) ^ self.rotate_right(a, 13) ^ self.rotate_right(a, 22)
-  maj = (a & b) ^ (a & c) ^ (b & c)
-  tmp2 = (tmp1 + s0 + maj) & 0xffffffff
-  tmp3 = (d + tmp1) & 0xffffffff
-  print("Compression step:", list(map(hex, (tmp2, a, b, c, tmp3, e, f, g))))
-  return (tmp2, a, b, c, tmp3, e, f, g)
 
 if __name__ == '__main__':
   while True:
