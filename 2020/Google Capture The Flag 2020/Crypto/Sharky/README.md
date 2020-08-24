@@ -233,5 +233,198 @@ hh = "39715f0da097fc779d86e4ec5221d19cec1d908d219e725b929ff540158da0c0"
 unpacked_digest = []
 for i in range(0, len(hh), 8):
     unpacked_digest.append(int(hh[i:i + 8], 16))
-last_state = [(x - y) % 2**32 for x, y in zip(unpacked_digest, final_state)]
+s = [(x - y) % 2**32 for x, y in zip(unpacked_digest, final_state)]
 ```
+Now that we have the correct `s` value, we can run our `compression_step_inv` function and build our z3 model.
+## Building the z3 model and recoving the round keys
+```python
+sha = sha256.SHA256()
+final_state = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
+hh = "39715f0da097fc779d86e4ec5221d19cec1d908d219e725b929ff540158da0c0"
+unpacked_digest = []
+for i in range(0, len(hh), 8):
+    unpacked_digest.append(int(hh[i:i + 8], 16))
+last_state = [(x - y) % 2**32 for x, y in zip(unpacked_digest, final_state)]
+for _ in range(-1, -57, -1):
+    last_state = sha.compression_step_inv(last_state, round_k[_], w[_])
+
+s = Solver()  
+#now we use z3 to figure out the last 8
+k_s = [BitVec("k{}".format(i), 32) for i in range(8)]
+for _ in range(7, -1, -1):
+    last_state = compression_step_inv_z3(last_state, k_s[_], w[_])
+for _ in range(8):
+    s.add(final_state[_] == last_state[_])
+
+s.check()
+m = s.model()
+recovered_round_keys = [m[ki].as_long() for ki in k_s]
+print(recovered_round_keys)
+```
+Now we get to put together what we described. We first figure out the last output of the `compress_step` function, then we run our `compression_step_inv` function 56 times. For the last 8 times, we use our 8 BitVectors to hold the unknown round keys. Then we run the `compression_step_inv_z3` function 8 times to build our model. The reason we have a slightly different inverse function is because some computations don't port well with z3, so we have to make sure we use basic operators like bit shifts, &, |, etc. After building our model, we ask z3 to find some values that satisfy it.
+
+```python
+def rotate_right(v, n):
+  w = (v >> n) | (v << (32 - n))
+  return w & 0xffffffff
+
+def compression_step_inv_z3(state, k_i, w_i):
+  tmp2, a, b, c, tmp3, e, f, g = state
+  s0 = rotate_right(a, 2) ^ rotate_right(a, 13) ^ rotate_right(a, 22)
+  ch = (e & f) ^ (~e & g)
+  s1 = rotate_right(e, 6) ^ rotate_right(e, 11) ^ rotate_right(e, 25)
+  maj = (a & b) ^ (a & c) ^ (b & c)
+  tmp1 = (tmp2 - s0 - maj) % 2**32
+  h = (tmp1 - s1 - ch - k_i - w_i) % 2**32
+  d = (tmp3 - tmp1) % 2**32  
+  #print("Compression step:", list(map(hex, (a, b, c, d, e, f, g, h))))
+  return (a, b, c, d, e, f, g, h)
+```
+Running the code, we successfully do get potential round_key values, but they don't seem to be correct. Manually testing, we find out that 1 of the values (usually the 2nd round key) is incorrect. The reason for this is simply because our model wasn't constrained enough, so z3 found other potential solutions. We have 2 choices, either add more constraints (which i will discuss), or just kee querying until z3 correctly guesses the round keys (which i ended up doing).
+
+Final exploit code is below.
+```python
+#! /usr/bin/python3
+import binascii
+import os
+import sha256
+import hashlib
+from z3 import *
+from pwn import *
+
+# Setup msg_secret and flag
+NUM_KEYS = 8
+MSG = b'Encoded with random keys'
+
+def sha256_with_secret_round_keys(m: bytes, secret_round_keys: dict) -> bytes:
+  """Computes SHA256 with some secret round keys.
+
+  Args:
+    m: the message to hash
+    secret_round_keys: a dictionary where secret_round_keys[i] is the value of
+      the round key k[i] used in SHA-256
+
+  Returns:
+    the digest
+  """
+  sha = sha256.SHA256()
+  round_keys = sha.k[:]
+  for i, v in secret_round_keys.items():
+    round_keys[i] = v
+  return sha.sha256(m, round_keys)
+
+
+def generate_random_round_keys(cnt: int):
+  res = {}
+  for i in range(cnt):
+    rk = 0
+    for b in os.urandom(4):
+      rk = rk * 256 + b
+    res[i] = rk
+  return res
+
+round_k = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
+        0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+        0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
+        0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
+        0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+        0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+        0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a,
+        0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+        0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    ]
+
+w = [1164862319, 1684366368, 2003399784, 544366958, 1685024032, 1801812339, 2147483648, 0, 0, 0, 0, 0, 0, 0, 0, 192, 1522197188, 3891742175, 3836386829, 32341671, 928288908, 2364323079, 1515866404, 649785226, 1435989715, 250124094, 1469326411, 2429553944, 598071608, 1634056085, 4271828083, 4262132921, 2272436470, 39791740, 2337714294, 3555435891, 1519859327, 57013755, 2177157937, 1679613557, 2900649386, 612096658, 172526146, 2214036567, 3330460486, 1490972443, 1925782519, 4215628757, 2379791427, 2058888203, 1834962275, 3917548225, 2375084030, 1546202149, 3188006334, 4280719833, 726047027, 3650106516, 4058756591, 1443098026, 1972312730, 1218108430, 3428722156, 366022263]
+
+def rotate_right(v, n):
+  w = (v >> n) | (v << (32 - n))
+  return w & 0xffffffff
+
+def compression_step_inv(self, state, k_i, w_i):
+  tmp2, a, b, c, tmp3, e, f, g = state
+  s0 = self.rotate_right(a, 2) ^ self.rotate_right(a, 13) ^ self.rotate_right(a, 22)
+  ch = (e & f) ^ (~e & g)
+  s1 = self.rotate_right(e, 6) ^ self.rotate_right(e, 11) ^ self.rotate_right(e, 25)
+  maj = (a & b) ^ (a & c) ^ (b & c)
+  tmp1 = (tmp2 - s0 - maj) % 2**32
+  h = (tmp1 - s1 - ch - k_i - w_i) % 2**32
+  d = (tmp3 - tmp1) % 2**32  
+  print("Compression step:", list(map(hex, (a, b, c, d, e, f, g, h))))
+  return (a, b, c, d, e, f, g, h)
+
+def compression_step_inv_z3(state, k_i, w_i):
+  tmp2, a, b, c, tmp3, e, f, g = state
+  s0 = rotate_right(a, 2) ^ rotate_right(a, 13) ^ rotate_right(a, 22)
+  ch = (e & f) ^ (~e & g)
+  s1 = rotate_right(e, 6) ^ rotate_right(e, 11) ^ rotate_right(e, 25)
+  maj = (a & b) ^ (a & c) ^ (b & c)
+  tmp1 = (tmp2 - s0 - maj) % 2**32
+  h = (tmp1 - s1 - ch - k_i - w_i) % 2**32
+  d = (tmp3 - tmp1) % 2**32  
+  #print("Compression step:", list(map(hex, (a, b, c, d, e, f, g, h))))
+  return (a, b, c, d, e, f, g, h)
+
+  
+def compression_step(self, state, k_i, w_i):
+  a, b, c, d, e, f, g, h = state
+  s1 = self.rotate_right(e, 6) ^ self.rotate_right(e, 11) ^ self.rotate_right(e, 25)
+  ch = (e & f) ^ (~e & g)
+  tmp1 = (h + s1 + ch + k_i + w_i) & 0xffffffff
+  s0 = self.rotate_right(a, 2) ^ self.rotate_right(a, 13) ^ self.rotate_right(a, 22)
+  maj = (a & b) ^ (a & c) ^ (b & c)
+  tmp2 = (tmp1 + s0 + maj) & 0xffffffff
+  tmp3 = (d + tmp1) & 0xffffffff
+  print("Compression step:", list(map(hex, (tmp2, a, b, c, tmp3, e, f, g))))
+  return (tmp2, a, b, c, tmp3, e, f, g)
+
+if __name__ == '__main__':
+  while True:
+    secret_round_keys = generate_random_round_keys(NUM_KEYS)
+    #print("Secret_round_keys:", secret_round_keys)
+    #digest = sha256_with_secret_round_keys(MSG, secret_round_keys)
+    #print('MSG Digest: {}'.format(binascii.hexlify(digest).decode()))
+    sha = sha256.SHA256()
+    #digest2 = sha.sha256(MSG)
+    #print('MSG Digest with real SHA-256: {}'.format(binascii.hexlify(digest2).decode()))
+    r = remote('sharky.2020.ctfcompetition.com', 1337)
+    r.recvuntil("MSG Digest: ")
+    final_state = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
+    hh = r.recvline().strip()
+    #hh = binascii.hexlify(digest).decode() #"39715f0da097fc779d86e4ec5221d19cec1d908d219e725b929ff540158da0c0"
+    unpacked_digest = []
+    for i in range(0, len(hh), 8):
+      unpacked_digest.append(int(hh[i:i + 8], 16))
+    #print(unpacked_digest)
+    last_state = [(x - y) % 2**32 for x, y in zip(unpacked_digest, final_state)]
+    #print(list(map(hex, last_state)))
+    for _ in range(-1, -57, -1):
+      last_state = sha.compression_step_inv(last_state, round_k[_], w[_])
+    
+    s = Solver()  
+    #now we use z3 to figure out the last 8
+    k_s = [BitVec("k{}".format(i), 32) for i in range(8)]
+    for _ in range(7, -1, -1):
+      last_state = compression_step_inv_z3(last_state, k_s[_], w[_])
+    for _ in range(8):
+      s.add(final_state[_] == last_state[_])
+      
+    s.check()
+    m = s.model()
+    #print(m)
+    state = [m[ki].as_long() for ki in k_s]
+    #print(state)
+    r.recvuntil("Enter keys: ")
+    r.sendline(', '.join(list(map(hex, state))))
+    r.recvline()
+    resp = r.recvline()
+    if b"Sorry" not in resp:
+        print(resp)
+        break
+    r.close()
+
+```
+## Flag 
+`CTF{sHa_roUnD_k3Ys_caN_b3_r3vERseD}`
