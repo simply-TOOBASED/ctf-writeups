@@ -430,4 +430,4 @@ Compression step: ['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']
 Compression step: ['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']
 Compression step: ['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']
 ```
-Because these values stay the same for every encryption, we can add these constraints to our model and have a more reliable script.
+Because these values stay the same for the first 3 rounds for every encryption, we can add these constraints to our model and have a more reliable script to find the round keys.
