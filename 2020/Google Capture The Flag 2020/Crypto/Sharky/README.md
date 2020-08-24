@@ -280,9 +280,11 @@ def compression_step_inv_z3(state, k_i, w_i):
   #print("Compression step:", list(map(hex, (a, b, c, d, e, f, g, h))))
   return (a, b, c, d, e, f, g, h)
 ```
-Running the code, we successfully do get potential round_key values, but they don't seem to be correct. Manually testing, we find out that 1 of the values (usually the 2nd round key) is incorrect. The reason for this is simply because our model wasn't constrained enough, so z3 found other potential solutions. We have 2 choices, either add more constraints (which i will discuss), or just kee querying until z3 correctly guesses the round keys (which i ended up doing).
+Running the code, we successfully do get potential round_key values, but they don't seem to be correct. Manually testing, we find out that 1 of the values (usually the 2nd round key) is incorrect. 
 
-Final exploit code is below.
+The reason for this is simply because our model wasn't constrained enough, so z3 found other potential solutions. We have 2 choices, either add more constraints (which i will discuss), or just kepe querying the server until z3 correctly guesses the round keys (which i ended up doing).
+
+## Final Exploit Code
 ```python
 #! /usr/bin/python3
 import binascii
