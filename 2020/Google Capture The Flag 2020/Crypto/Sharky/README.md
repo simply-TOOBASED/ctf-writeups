@@ -161,4 +161,43 @@ Let's look closely at the `compression_step` function.
 * `tmp1`, `tmp2`, and `tmp3` are the values directly affected by `k_i`, which is the round key (and we don't know the first 8)
 
 ## Reversing compression_step
-Now, assuming we have the output of the `compression_step` function, can we reverse it?
+Now, assuming we have the output of the `compression_step` function, can we reverse it? This means we have
+```
+tmp2, a, b, c, tmp3, e, f, g
+```
+and we want to recover
+```
+a, b, c, d, e, f, g, h
+```
+So we can already compute 4 values in the `compression_step`, since they are directly computed from the values we have.
+```
+s0 = self.rotate_right(a, 2) ^ self.rotate_right(a, 13) ^ self.rotate_right(a, 22)
+ch = (e & f) ^ (~e & g)
+s1 = self.rotate_right(e, 6) ^ self.rotate_right(e, 11) ^ self.rotate_right(e, 25)
+maj = (a & b) ^ (a & c) ^ (b & c)
+```
+Even though the `& 0xffffffff` computation looks like it can't be reversed, it's actually just equivalent to `% 2**32`, or mod 4294967296. 
+
+Because all of the values in `state` and that are computed in `compression_step` are at most 32-bits (meaning they are smaller than 4294967296), we can reverse the `& 0xffffffff` computation by simply doing a negative mod. In python3 this is trivial because negative numbers with the mod operator result in a positive number (ie -3 mod 5 = 2). 
+
+Also, because we have `tmp2` and `tmp3`, we can recover `tmp1` and then `h` and `d`. Remember that `w_i` references one of the values from our `w` array we talked about earlier. Because this is constant, we can recover `h`.
+```
+tmp1 = (tmp2 - s0 - maj) % 2**32
+h = (tmp1 - s1 - ch - k_i - w_i) % 2**32
+d = (tmp3 - tmp1) % 2**32  
+```
+So we were able to successfully recover all of the values, simply due to the fact that the message encrypted is always the same and then the `w` array is also the same. Function to reverse a compression step is below:
+```python
+  def compression_step_inv(self, state, k_i, w_i):
+    tmp2, a, b, c, tmp3, e, f, g = state
+    s0 = self.rotate_right(a, 2) ^ self.rotate_right(a, 13) ^ self.rotate_right(a, 22)
+    ch = (e & f) ^ (~e & g)
+    s1 = self.rotate_right(e, 6) ^ self.rotate_right(e, 11) ^ self.rotate_right(e, 25)
+    maj = (a & b) ^ (a & c) ^ (b & c)
+    tmp1 = (tmp2 - s0 - maj) % 2**32
+    h = (tmp1 - s1 - ch - k_i - w_i) % 2**32
+    d = (tmp3 - tmp1) % 2**32  
+    #print("Compression step:", list(map(hex, (a, b, c, d, e, f, g, h))))
+    return (a, b, c, d, e, f, g, h)
+```
+So we can reverse a compression step, but there's a problem. We don't know the `k_i` values for the first 8 rounds (that's what we need to recover), so when we go backwards and hit the 8th round we're gonna get stuck.
