@@ -186,7 +186,7 @@ tmp1 = (tmp2 - s0 - maj) % 2**32
 h = (tmp1 - s1 - ch - k_i - w_i) % 2**32
 d = (tmp3 - tmp1) % 2**32  
 ```
-So we were able to successfully recover all of the values, simply due to the fact that the message encrypted is always the same and then the `w` array is also the same. Function to reverse a compression step is below:
+So we were able to successfully recover all of the values, simply due to the fact that the message encrypted is always the same and then the `w` array is also the same. Function to reverse a compression step is below (we add this function to [sha256.py](sha256.py)):
 ```python
   def compression_step_inv(self, state, k_i, w_i):
     tmp2, a, b, c, tmp3, e, f, g = state
@@ -200,4 +200,38 @@ So we were able to successfully recover all of the values, simply due to the fac
     #print("Compression step:", list(map(hex, (a, b, c, d, e, f, g, h))))
     return (a, b, c, d, e, f, g, h)
 ```
-So we can reverse a compression step, but there's a problem. We don't know the `k_i` values for the first 8 rounds (that's what we need to recover), so when we go backwards and hit the 8th round we're gonna get stuck.
+So we can reverse a compression step, but there's a problem. We don't know the `k_i` values for the first 8 rounds (that's what we need to recover), so when we go backwards and hit the 8th round we're gonna get stuck. We turn to our trusty solver, z3!
+
+We can essentially create 8 BitVectors that are 32-bits (to represent the unknown 8 round keys), and then feed them into our `compression_step_inv` function, creating 8 equations. We can build a model with these equations, since we know what the final output_state needs to look like, and then see if z3 can figure out our round keys. Remember that the final output state (going backwards) needs to be `self.h`
+```
+self.h = [
+        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c,
+        0x1f83d9ab, 0x5be0cd19
+    ]
+```
+Beacuse this is the initial value of `state` used for the first time `compression_step` is executed. So we have a target value that our model needs to satisfy. Before we build the z3 model, we need to first figure out some other small things.
+
+First, we need to figure out the last `state` value after `compression_step` is executed 64 times. If we go back to the sha256-algorithm, there's one more thing that happens before we're given our hash.
+
+```python
+  def sha256_raw(self, m, round_keys = None):
+    if len(m) % 64 != 0:
+      raise ValueError('m must be a multiple of 64 bytes')
+    print(m)
+    state = self.h
+    for i in range(0, len(m), 64):
+      block = m[i:i + 64]
+      w = self.compute_w(block)
+      s = self.compression(state, w, round_keys)
+      state = [(x + y) & 0xffffffff for x, y in zip(state, s)]
+    return state
+```
+The last output state is `s`, which we need to find out, and our hash is computed by adding each value in `s` to each value in `state`, which is `self.h`. So to recover `s`, we take our hash, unpack it in an array of 8 32-bit integers, and then do the same negative mod we did earlier. We can do it with the following code.
+```python
+final_state = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
+hh = "39715f0da097fc779d86e4ec5221d19cec1d908d219e725b929ff540158da0c0"
+unpacked_digest = []
+for i in range(0, len(hh), 8):
+    unpacked_digest.append(int(hh[i:i + 8], 16))
+last_state = [(x - y) % 2**32 for x, y in zip(unpacked_digest, final_state)]
+```
