@@ -236,7 +236,7 @@ for i in range(0, len(hh), 8):
 s = [(x - y) % 2**32 for x, y in zip(unpacked_digest, final_state)]
 ```
 Now that we have the correct `s` value, we can run our `compression_step_inv` function and build our z3 model.
-## Building the z3 model and recoving the round keys
+## Building the z3 model and recovering the round keys
 ```python
 sha = sha256.SHA256()
 final_state = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
