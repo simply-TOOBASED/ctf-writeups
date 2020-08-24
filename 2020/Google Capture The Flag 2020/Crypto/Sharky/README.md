@@ -384,29 +384,20 @@ def compression_step(self, state, k_i, w_i):
 
 if __name__ == '__main__':
   while True:
-    secret_round_keys = generate_random_round_keys(NUM_KEYS)
-    #print("Secret_round_keys:", secret_round_keys)
-    #digest = sha256_with_secret_round_keys(MSG, secret_round_keys)
-    #print('MSG Digest: {}'.format(binascii.hexlify(digest).decode()))
     sha = sha256.SHA256()
-    #digest2 = sha.sha256(MSG)
-    #print('MSG Digest with real SHA-256: {}'.format(binascii.hexlify(digest2).decode()))
     r = remote('sharky.2020.ctfcompetition.com', 1337)
     r.recvuntil("MSG Digest: ")
     final_state = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
     hh = r.recvline().strip()
-    #hh = binascii.hexlify(digest).decode() #"39715f0da097fc779d86e4ec5221d19cec1d908d219e725b929ff540158da0c0"
     unpacked_digest = []
     for i in range(0, len(hh), 8):
       unpacked_digest.append(int(hh[i:i + 8], 16))
-    #print(unpacked_digest)
     last_state = [(x - y) % 2**32 for x, y in zip(unpacked_digest, final_state)]
-    #print(list(map(hex, last_state)))
     for _ in range(-1, -57, -1):
       last_state = sha.compression_step_inv(last_state, round_k[_], w[_])
     
     s = Solver()  
-    #now we use z3 to figure out the last 8
+    #now we use z3 to figure out the last 8 round_keys
     k_s = [BitVec("k{}".format(i), 32) for i in range(8)]
     for _ in range(7, -1, -1):
       last_state = compression_step_inv_z3(last_state, k_s[_], w[_])
@@ -415,9 +406,7 @@ if __name__ == '__main__':
       
     s.check()
     m = s.model()
-    #print(m)
     state = [m[ki].as_long() for ki in k_s]
-    #print(state)
     r.recvuntil("Enter keys: ")
     r.sendline(', '.join(list(map(hex, state))))
     r.recvline()
