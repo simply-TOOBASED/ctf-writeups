@@ -48,4 +48,20 @@ p = 2^1023 + 2^1022 + 1 + ...
 ```
 p = (c1 * 2^960) + (c2 * 2^896) + (c3 * 2^832) + ... + c16
 ```
-Essentially it's 16 different 64-bit numbers all merged together into 1 1024-bit number. The good news is, with the first and last chunk we can easily recover the s values and then regenerate the primes that were used. Let's take a look at the first chunk.
+Where `c1, c2, ..., c16` are each individiual 64-bit chunk.
+
+Essentially it's 16 different 64-bit numbers all merged together into 1 1024-bit number. The good news is, with the first and last chunk we can easily recover the s values and then regenerate the primes that were used. Let's take a look at the first chunk and how it's generated.
+
+```python
+s = random.getrandbits(64)
+p = 0
+p = (p << 64) + s = s
+s = (a * s) % 2**64
+```
+
+So the first chunk is basically `s`. Every loop, `s` is updated by multiplying it with `a` and taking the value `mod 2**64`. Then this value is used in the next chunk. What this tells us is that the chunks have the form. 
+```
+c_k = (a^(k-1)*s) mod 2**64
+c_1 = s, c_2 = (a*s) mod 2**64, c_3 = (a * ((a*s) mod 2**64)) mod 2**64 = (a^2*s) mod 2**64, ... c_16 = (a^15*s) mod 2**64
+```
+We only need to take the `mod 2**64` once, as doing it multiple times will arrive at the same result.
