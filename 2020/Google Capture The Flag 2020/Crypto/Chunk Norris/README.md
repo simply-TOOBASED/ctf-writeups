@@ -98,6 +98,7 @@ Because the number is only 128-bits, we can easily factor it with the sympy libr
 There is **ONE** caveat. When testing, it was discovered that upper 64 bits we recover is actually the upper 64 bits of the products +/- a small value, usually 1 to 3. Usually we just have to subtract 1 and we're good.
 
 ## Final Exploit Code
+```python
 from sympy import divisors
 import gmpy2
 import itertools
@@ -139,6 +140,7 @@ for s1, s2 in itertools.combinations(candidates, 2):
     if p * q == n:
         d = gmpy2.invert(e, (p - 1) * (q - 1))
         print pow(c, d, n)
+```
 ## Flag
 ```
 CTF{__donald_knuths_lcg_would_be_better_well_i_dont_think_s0__}
