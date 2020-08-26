@@ -60,14 +60,23 @@ s = (a * s) % 2**64
 ```
 So the first chunk is basically `s`. Every loop, `s` is updated by multiplying it with `a` and taking the value `mod 2**64`. Then this value is used in the next chunk. What this tells us is that the chunks have the form. 
 ```
-c_k = (a^(k-1)*s) mod 2**64
-c_1 = s
-c_2 = (a*s) mod 2**64
-c_3 = (a * ((a*s) mod 2**64)) mod 2**64 = (a^2*s) mod 2**64
+ck = (a^(k-1)*s) mod 2**64
+c1 = s
+c2 = (a*s) mod 2**64
+c3 = (a * ((a*s) mod 2**64)) mod 2**64 = (a^2*s) mod 2**64
 ...
-c_16 = (a^15*s) mod 2**64
+c16 = (a^15*s) mod 2**64
 ```
 We only need to take the `mod 2**64` once, as doing it multiple times will arrive at the same result. With this new knowledge, we can easily recover s. But there's an extra step; this is the form for one of the primes, but `n` is the product of 2 of these primes! So we have to apply a few math tricks to figure out `s`.
 ```
 N = p*q
-N = (
+N = (c1_p*2^960 + c2_p*2^896 + c2_p*2^832 + ... c16_p) * (c1_q*2^960 + c2_q*2^896 + c2_q*2^832 + ... c16_q)
+N = (c1_p*c1_q*2^1920 + (c1_p*c2_q+c2_p*c1_q)*2^1856 + ... + c16_p*c_16_q)
+```
+We know that `N` is 2048 bits, and that any product of the 2 chunks is 128 bits. Thus, we know that `c1_p*c1_q*2^1920` is the upper 128 bits of N. However, the lower 64-bits of those 128-bits is contributed by the upper 64-bits of `(c1_p*c2_q+c2_p*c1_q)*2^1856`. This means that the 64 MSB bits of N is equivalent to the upper 64-bits of `c1_p*c1_q`.
+
+We said before that the first chunk is essentially `s`. This means that `c1_p*c1_q` is equivalent to `s_p*s_q`. So we can do
+```
+upper_64_bits_of_n = (n >> 1984) = (s_p*s_q) >> 64 = upper_64_bits_of_sp_sq`
+```
+We can't do much with just the upper 64 bits of the products of the s values, we need to figure out the lower 64 bits as well. We can do that with the last product.
