@@ -58,10 +58,16 @@ p = 0
 p = (p << 64) + s = s
 s = (a * s) % 2**64
 ```
-
 So the first chunk is basically `s`. Every loop, `s` is updated by multiplying it with `a` and taking the value `mod 2**64`. Then this value is used in the next chunk. What this tells us is that the chunks have the form. 
 ```
 c_k = (a^(k-1)*s) mod 2**64
-c_1 = s, c_2 = (a*s) mod 2**64, c_3 = (a * ((a*s) mod 2**64)) mod 2**64 = (a^2*s) mod 2**64, ... c_16 = (a^15*s) mod 2**64
+c_1 = s
+c_2 = (a*s) mod 2**64
+c_3 = (a * ((a*s) mod 2**64)) mod 2**64 = (a^2*s) mod 2**64
+...
+c_16 = (a^15*s) mod 2**64
 ```
-We only need to take the `mod 2**64` once, as doing it multiple times will arrive at the same result.
+We only need to take the `mod 2**64` once, as doing it multiple times will arrive at the same result. With this new knowledge, we can easily recover s. But there's an extra step; this is the form for one of the primes, but `n` is the product of 2 of these primes! So we have to apply a few math tricks to figure out `s`.
+```
+N = p*q
+N = (
