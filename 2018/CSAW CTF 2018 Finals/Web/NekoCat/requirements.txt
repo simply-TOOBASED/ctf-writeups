@@ -6,7 +6,7 @@ cffi==1.11.5
 chardet==3.0.4
 html2text==2018.1.9
 idna==2.7
-Jinja2==2.10
+Jinja2==2.11.3
 MarkupSafe==1.1.0
 pycparser==2.19
 requests==2.20.0
